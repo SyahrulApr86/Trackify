@@ -7,6 +7,7 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Task, Category } from '@/types/task';
 import { TagInput } from '../TagInput';
+import { format, parse, isValid } from 'date-fns';
 
 interface AddTaskDialogProps {
   columnId: string;
@@ -23,22 +24,53 @@ export function AddTaskDialog({
   categories,
   defaultCategory
 }: AddTaskDialogProps) {
+  // Get today's date at 23:59
+  const today = new Date();
+  today.setHours(23, 59, 0, 0);
+  const defaultDeadline = format(today, "yyyy-MM-dd'T'HH:mm");
+
   const [taskForm, setTaskForm] = useState({
     title: '',
     description: '',
-    deadline: '',
+    deadline: defaultDeadline,
     category: defaultCategory || '',
     newCategory: '',
     tags: [] as string[]
   });
   const [customCategory, setCustomCategory] = useState(false);
 
+  const handleDeadlineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    let deadline = value;
+
+    // If only date is selected (no time), add 23:59
+    if (value && value.length === 10) {
+      deadline = `${value}T23:59`;
+    }
+    
+    // Validate the date
+    const date = parse(deadline, "yyyy-MM-dd'T'HH:mm", new Date());
+    if (isValid(date)) {
+      setTaskForm({ ...taskForm, deadline });
+    }
+  };
+
   const handleSubmit = async () => {
     const category = customCategory ? taskForm.newCategory : taskForm.category;
+    
+    // Ensure the deadline is in ISO format for consistency
+    let deadline = taskForm.deadline;
+    if (deadline) {
+      const date = parse(deadline, "yyyy-MM-dd'T'HH:mm", new Date());
+      if (isValid(date)) {
+        deadline = date.toISOString();
+      }
+    }
+
     await onAdd(columnId, {
       title: taskForm.title,
       description: taskForm.description || null,
-      deadline: taskForm.deadline || null,
+      deadline: deadline || null,
       category: category || null,
       tags: taskForm.tags
     });
@@ -75,7 +107,7 @@ export function AddTaskDialog({
               id="deadline"
               type="datetime-local"
               value={taskForm.deadline}
-              onChange={(e) => setTaskForm({ ...taskForm, deadline: e.target.value })}
+              onChange={handleDeadlineChange}
             />
           </div>
           <div className="space-y-2">

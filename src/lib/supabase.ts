@@ -17,5 +17,13 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     emailAuth: {
       requireEmailConfirmation: false
     }
+  },
+  global: {
+    headers: {
+      'x-client-info': 'trackify'
+    }
+  },
+  db: {
+    schema: 'public'
   }
 });

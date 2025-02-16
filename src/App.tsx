@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from './store/authStore';
-import { Loader2, LogOut, AlertCircle, X, ArrowLeft, Kanban, BookText } from 'lucide-react';
+import { Loader2, LogOut, AlertCircle, X, ArrowLeft, Kanban, BookText, Clock } from 'lucide-react';
 import { KanbanBoard } from './components/KanbanBoard';
 import { DailyNotes } from './components/DailyNotes';
+import { TimeProgressBar } from './components/TimeProgressBar';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
@@ -14,7 +15,7 @@ function App() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
-  const [view, setView] = useState<'tasks' | 'notes'>('tasks');
+  const [view, setView] = useState<'tasks' | 'notes' | 'progress'>('tasks');
   const { signIn, signUp, signOut, user, loading, error, clearError } = useAuthStore();
 
   // Restore user context when the app loads with a persisted user
@@ -203,6 +204,15 @@ function App() {
               Notes
             </Button>
             <Button
+              variant={view === 'progress' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setView('progress')}
+              className="flex items-center gap-2"
+            >
+              <Clock className="w-4 h-4" />
+              Progress
+            </Button>
+            <Button
               variant="ghost"
               size="sm"
               onClick={signOut}
@@ -215,7 +225,13 @@ function App() {
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {view === 'tasks' ? <KanbanBoard /> : <DailyNotes />}
+        {view === 'tasks' ? (
+          <KanbanBoard />
+        ) : view === 'notes' ? (
+          <DailyNotes />
+        ) : (
+          <TimeProgressBar />
+        )}
       </main>
     </div>
   );

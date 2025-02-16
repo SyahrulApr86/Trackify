@@ -81,7 +81,30 @@ export async function signOut(): Promise<void> {
   await supabase.rpc('clear_user_context');
 }
 
-// Add a function to restore the user context
-export async function restoreUserContext(userId: string): Promise<void> {
-  await supabase.rpc('set_user_context', { user_id: userId });
+// Add a function to restore the user context with retries
+export async function restoreUserContext(userId: string, maxRetries = 3): Promise<void> {
+  let retries = 0;
+  while (retries < maxRetries) {
+    try {
+      await supabase.rpc('set_user_context', { user_id: userId });
+      
+      // Verify the context was set by making a test query
+      const { error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .single();
+      
+      if (!error) {
+        return; // Context was successfully set
+      }
+    } catch (error) {
+      console.error(`Failed to restore user context (attempt ${retries + 1}):`, error);
+    }
+    retries++;
+    if (retries < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+    }
+  }
+  throw new Error('Failed to restore user context after multiple attempts');
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, parse, isValid } from 'date-fns';
 import { Calendar, Clock, Archive } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -33,7 +33,7 @@ export function TaskDetailsDialog({
   const [formData, setFormData] = useState({
     title: task.title,
     description: task.description || '',
-    deadline: task.deadline ? task.deadline.slice(0, 16) : '',
+    deadline: task.deadline ? format(new Date(task.deadline), "yyyy-MM-dd'T'HH:mm") : '',
     category: task.category || '',
     tags: [] as string[]
   });
@@ -59,8 +59,36 @@ export function TaskDetailsDialog({
     loadTaskTags();
   }, [task.id, user]);
 
+  const handleDeadlineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    let deadline = value;
+
+    // If only date is selected (no time), add 23:59
+    if (value && value.length === 10) {
+      deadline = `${value}T23:59`;
+    }
+    
+    // Validate the date
+    const date = parse(deadline, "yyyy-MM-dd'T'HH:mm", new Date());
+    if (isValid(date)) {
+      setFormData({ ...formData, deadline });
+    }
+  };
+
   const handleSave = async () => {
-    await onUpdate(task.id, formData);
+    // Ensure the deadline is in ISO format for consistency
+    let deadline = formData.deadline;
+    if (deadline) {
+      const date = parse(deadline, "yyyy-MM-dd'T'HH:mm", new Date());
+      if (isValid(date)) {
+        deadline = date.toISOString();
+      }
+    }
+
+    await onUpdate(task.id, {
+      ...formData,
+      deadline: deadline || null
+    });
     setIsEditing(false);
   };
 
@@ -105,7 +133,7 @@ export function TaskDetailsDialog({
                   id="deadline"
                   type="datetime-local"
                   value={formData.deadline}
-                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                  onChange={handleDeadlineChange}
                 />
               </div>
               <div className="space-y-2">

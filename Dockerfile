@@ -6,11 +6,19 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
+# Define build arguments
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+
 # Install dependencies
 RUN npm ci
 
 # Copy source code
 COPY . .
+
+# Set build environment variables
+ENV VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+ENV VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
 
 # Build the application
 RUN npm run build

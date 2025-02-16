@@ -46,7 +46,7 @@ jobs:
               "ref":"main",
               "environment":"production",
               "auto_merge":false,
-              "required_contexts":[]
+              "required_contexts":[] 
             }' \
             https://api.github.com/repos/${{ github.repository }}/deployments)
           
@@ -71,9 +71,10 @@ jobs:
             docker stop trackify-app || true
             docker rm trackify-app || true
             docker run -d --name trackify-app \
-              -p 3002:80 \
+              -p 8010:80 \
               -e VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }} \
               -e VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }} \
+              --network app-network \
               ${{ secrets.DOCKER_USERNAME }}/trackify-app:latest
             docker system prune -f
 

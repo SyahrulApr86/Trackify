@@ -2,7 +2,7 @@
 
 A modern task and note management application built with React, TypeScript, and Supabase. Trackify helps you organize your work with a beautiful Kanban board, daily notes, and powerful task management features.
 
-![Trackify Screenshot](https://images.unsplash.com/photo-1557683311-eac922347aa1?q=80&w=2829&auto=format&fit=crop)
+![Trackify Screenshot](./media/img.png)
 
 ## ✨ Features
 
@@ -63,8 +63,8 @@ A modern task and note management application built with React, TypeScript, and 
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd trackify
+git clone https://github.com/SyahrulApr86/Trackify.git
+cd Trackify
 ```
 
 2. Install dependencies:
@@ -92,16 +92,16 @@ npm run dev
 1. Build and run with Docker Compose:
 ```bash
 # Build the containers
-docker-compose build
+docker compose build
 
 # Start the services
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
-2. Access the application at `http://localhost:80`
+2. Access the application at `http://localhost:8010`
 
 ## 🗄️ Database Setup
 
@@ -162,23 +162,6 @@ docker-compose logs -f
 - Click to view full details
 - Edit or delete as needed
 - Organize by date
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch:
-   ```bash
-   git checkout -b feature/AmazingFeature
-   ```
-3. Commit your changes:
-   ```bash
-   git commit -m 'Add some AmazingFeature'
-   ```
-4. Push to the branch:
-   ```bash
-   git push origin feature/AmazingFeature
-   ```
-5. Open a Pull Request
 
 ## 📝 License
 

@@ -7,105 +7,138 @@ export async function updateTask(
   taskId: string,
   updates: Partial<Task>
 ) {
-  await restoreUserContext(userId);
-  
-  let categoryId = null;
-  
-  if (updates.category) {
-    const { data: categoryData, error: categoryError } = await supabase
-      .rpc('manage_category', { p_name: updates.category });
+  try {
+    // First restore user context
+    await restoreUserContext(userId);
     
-    if (categoryError) throw categoryError;
-    categoryId = categoryData;
-  }
-
-  // Handle tags if they're included in the updates
-  if (updates.tags) {
-    await supabase.rpc('add_task_tags', {
-      p_task_id: taskId,
-      p_tag_names: updates.tags
-    });
-
-    // Remove any existing tags that aren't in the new list
-    const { data: currentTags } = await supabase
-      .from('task_tags')
-      .select('tag:tags (id, name)')
-      .eq('task_id', taskId);
-
-    if (currentTags) {
-      const currentTagNames = currentTags.map(t => t.tag.name);
-      const tagsToRemove = currentTagNames.filter(name => !updates.tags?.includes(name));
+    let categoryId = null;
+    
+    if (updates.category) {
+      // Restore context again before managing category
+      await restoreUserContext(userId);
       
-      if (tagsToRemove.length > 0) {
-        const { data: tagsToDelete } = await supabase
-          .from('tags')
-          .select('id')
-          .in('name', tagsToRemove)
-          .eq('user_id', userId);
+      const { data: categoryData, error: categoryError } = await supabase
+        .rpc('manage_category', { p_name: updates.category });
+      
+      if (categoryError) throw categoryError;
+      categoryId = categoryData;
+    }
 
-        if (tagsToDelete && tagsToDelete.length > 0) {
-          await supabase.rpc('remove_task_tags', {
-            p_task_id: taskId,
-            p_tag_ids: tagsToDelete.map(t => t.id)
-          });
+    // Handle tags if they're included in the updates
+    if (updates.tags) {
+      // Restore context before handling tags
+      await restoreUserContext(userId);
+      
+      await supabase.rpc('add_task_tags', {
+        p_task_id: taskId,
+        p_tag_names: updates.tags
+      });
+
+      // Remove any existing tags that aren't in the new list
+      const { data: currentTags } = await supabase
+        .from('task_tags')
+        .select('tag:tags (id, name)')
+        .eq('task_id', taskId);
+
+      if (currentTags) {
+        const currentTagNames = currentTags.map(t => t.tag.name);
+        const tagsToRemove = currentTagNames.filter(name => !updates.tags?.includes(name));
+        
+        if (tagsToRemove.length > 0) {
+          // Restore context before removing tags
+          await restoreUserContext(userId);
+          
+          const { data: tagsToDelete } = await supabase
+            .from('tags')
+            .select('id')
+            .in('name', tagsToRemove)
+            .eq('user_id', userId);
+
+          if (tagsToDelete && tagsToDelete.length > 0) {
+            await supabase.rpc('remove_task_tags', {
+              p_task_id: taskId,
+              p_tag_ids: tagsToDelete.map(t => t.id)
+            });
+          }
         }
       }
     }
-  }
 
-  const taskUpdates = {
-    ...updates,
-    category_id: categoryId
-  };
-  delete taskUpdates.category;
-  delete taskUpdates.tags;
+    // Restore context before final update
+    await restoreUserContext(userId);
 
-  const { data: updatedTask, error } = await supabase
-    .from('tasks')
-    .update(taskUpdates)
-    .eq('id', taskId)
-    .select(`
-      *,
-      category:categories(name),
-      tags:task_tags(
-        tag:tags(
-          id,
-          name,
-          user_id,
-          created_at
+    const taskUpdates = {
+      ...updates,
+      category_id: categoryId
+    };
+    delete taskUpdates.category;
+    delete taskUpdates.tags;
+
+    const { data: updatedTask, error } = await supabase
+      .from('tasks')
+      .update(taskUpdates)
+      .eq('id', taskId)
+      .select(`
+        *,
+        category:categories(name),
+        tags:task_tags(
+          tag:tags(
+            id,
+            name,
+            user_id,
+            created_at
+          )
         )
-      )
-    `)
-    .single();
+      `)
+      .single();
 
-  if (error) throw error;
+    if (error) throw error;
 
-  return {
-    ...updatedTask,
-    category: updatedTask.category?.name,
-    tags: updatedTask.tags.map(t => t.tag)
-  };
+    return {
+      ...updatedTask,
+      category: updatedTask.category?.name,
+      tags: updatedTask.tags.map(t => t.tag)
+    };
+  } catch (error) {
+    console.error('Error updating task:', error);
+    throw error;
+  }
 }
 
 export async function deleteTask(userId: string, taskId: string) {
-  await restoreUserContext(userId);
-  
-  const { error } = await supabase
-    .from('tasks')
-    .delete()
-    .eq('id', taskId);
+  try {
+    await restoreUserContext(userId);
+    
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', taskId);
 
-  if (error) throw error;
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting task:', error);
+    throw error;
+  }
 }
 
 export async function archiveTask(userId: string, taskId: string) {
-  await restoreUserContext(userId);
-  await supabase.rpc('archive_task', { task_id: taskId });
+  try {
+    await restoreUserContext(userId);
+    await supabase.rpc('archive_task', { task_id: taskId });
+  } catch (error) {
+    console.error('Error archiving task:', error);
+    throw error;
+  }
 }
 
 export async function unarchiveTask(userId: string, taskId: string) {
-  await restoreUserContext(userId);
-  await supabase.rpc('unarchive_task', { task_id: taskId });
+  try {
+    await restoreUserContext(userId);
+    await supabase.rpc('unarchive_task', { task_id: taskId });
+  } catch (error) {
+    console.error('Error unarchiving task:', error);
+    throw error;
+  }
 }
 
 export async function createTask(
@@ -172,12 +205,17 @@ export async function createTask(
 
     // Add tags if they're included
     if (taskData.tags && taskData.tags.length > 0) {
+      // Restore context before adding tags
+      await restoreUserContext(userId);
+      
       await supabase.rpc('add_task_tags', {
         p_task_id: newTask.id,
         p_tag_names: taskData.tags
       });
 
       // Fetch the task again to get the updated tags
+      await restoreUserContext(userId);
+      
       const { data: updatedTask, error: refreshError } = await supabase
         .from('tasks')
         .select(`
@@ -222,16 +260,21 @@ export async function updateTaskPosition(
   status: string,
   order: number
 ) {
-  await restoreUserContext(userId);
-  
-  await supabase
-    .from('tasks')
-    .update({
-      column_id: columnId,
-      order: order,
-      status: status
-    })
-    .eq('id', taskId);
+  try {
+    await restoreUserContext(userId);
+    
+    await supabase
+      .from('tasks')
+      .update({
+        column_id: columnId,
+        order: order,
+        status: status
+      })
+      .eq('id', taskId);
+  } catch (error) {
+    console.error('Error updating task position:', error);
+    throw error;
+  }
 }
 
 export async function bulkUpdateTasks(
@@ -239,48 +282,61 @@ export async function bulkUpdateTasks(
   taskIds: string[],
   updates: Partial<Task>
 ) {
-  await restoreUserContext(userId);
-  
-  let categoryId = null;
-  
-  if (updates.category) {
-    const { data: categoryData, error: categoryError } = await supabase
-      .rpc('manage_category', { p_name: updates.category });
+  try {
+    await restoreUserContext(userId);
     
-    if (categoryError) throw categoryError;
-    categoryId = categoryData;
+    let categoryId = null;
+    
+    if (updates.category) {
+      // Restore context before managing category
+      await restoreUserContext(userId);
+      
+      const { data: categoryData, error: categoryError } = await supabase
+        .rpc('manage_category', { p_name: updates.category });
+      
+      if (categoryError) throw categoryError;
+      categoryId = categoryData;
+    }
+
+    const taskUpdates = {
+      ...updates,
+      category_id: categoryId
+    };
+    delete taskUpdates.category;
+    delete taskUpdates.tags;
+
+    const { error } = await supabase
+      .from('tasks')
+      .update(taskUpdates)
+      .in('id', taskIds);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error updating tasks:', error);
+    throw error;
   }
-
-  const taskUpdates = {
-    ...updates,
-    category_id: categoryId
-  };
-  delete taskUpdates.category;
-  delete taskUpdates.tags;
-
-  const { error } = await supabase
-    .from('tasks')
-    .update(taskUpdates)
-    .in('id', taskIds);
-
-  if (error) throw error;
 }
 
 export async function getTaskTags(userId: string, taskId: string) {
-  await restoreUserContext(userId);
-  
-  const { data, error } = await supabase
-    .from('task_tags')
-    .select(`
-      tag:tags (
-        id,
-        name,
-        user_id,
-        created_at
-      )
-    `)
-    .eq('task_id', taskId);
+  try {
+    await restoreUserContext(userId);
+    
+    const { data, error } = await supabase
+      .from('task_tags')
+      .select(`
+        tag:tags (
+          id,
+          name,
+          user_id,
+          created_at
+        )
+      `)
+      .eq('task_id', taskId);
 
-  if (error) throw error;
-  return data.map(item => item.tag);
+    if (error) throw error;
+    return data.map(item => item.tag);
+  } catch (error) {
+    console.error('Error getting task tags:', error);
+    throw error;
+  }
 }

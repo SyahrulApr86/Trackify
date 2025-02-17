@@ -27,7 +27,11 @@ export function TimeProgressDialog({
   const [formData, setFormData] = useState({
     title: '',
     start_date: format(new Date(), 'yyyy-MM-dd'),
-    end_date: format(new Date(), 'yyyy-MM-dd')
+    start_hour: 6,
+    start_minute: 0,
+    end_date: format(new Date(), 'yyyy-MM-dd'),
+    end_hour: 6,
+    end_minute: 0
   });
 
   useEffect(() => {
@@ -35,13 +39,21 @@ export function TimeProgressDialog({
       setFormData({
         title: editingProgress.title,
         start_date: format(new Date(editingProgress.start_date), 'yyyy-MM-dd'),
-        end_date: format(new Date(editingProgress.end_date), 'yyyy-MM-dd')
+        start_hour: editingProgress.start_hour,
+        start_minute: editingProgress.start_minute,
+        end_date: format(new Date(editingProgress.end_date), 'yyyy-MM-dd'),
+        end_hour: editingProgress.end_hour,
+        end_minute: editingProgress.end_minute
       });
     } else {
       setFormData({
         title: '',
         start_date: format(new Date(), 'yyyy-MM-dd'),
-        end_date: format(new Date(), 'yyyy-MM-dd')
+        start_hour: 6,
+        start_minute: 0,
+        end_date: format(new Date(), 'yyyy-MM-dd'),
+        end_hour: 6,
+        end_minute: 0
       });
     }
   }, [editingProgress]);
@@ -66,7 +78,11 @@ export function TimeProgressDialog({
       setFormData({
         title: '',
         start_date: format(new Date(), 'yyyy-MM-dd'),
-        end_date: format(new Date(), 'yyyy-MM-dd')
+        start_hour: 6,
+        start_minute: 0,
+        end_date: format(new Date(), 'yyyy-MM-dd'),
+        end_hour: 6,
+        end_minute: 0
       });
     } catch (error: any) {
       setError(error.message);
@@ -102,23 +118,57 @@ export function TimeProgressDialog({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="start_date">Start Date</Label>
-            <Input
-              id="start_date"
-              type="date"
-              value={formData.start_date}
-              onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-            />
+            <Label>Start Time</Label>
+            <div className="grid grid-cols-3 gap-2">
+              <Input
+                type="date"
+                value={formData.start_date}
+                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+              />
+              <Input
+                type="number"
+                min="0"
+                max="23"
+                value={formData.start_hour}
+                onChange={(e) => setFormData({ ...formData, start_hour: parseInt(e.target.value) })}
+                placeholder="Hour (0-23)"
+              />
+              <Input
+                type="number"
+                min="0"
+                max="59"
+                value={formData.start_minute}
+                onChange={(e) => setFormData({ ...formData, start_minute: parseInt(e.target.value) })}
+                placeholder="Minute (0-59)"
+              />
+            </div>
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="end_date">End Date</Label>
-            <Input
-              id="end_date"
-              type="date"
-              value={formData.end_date}
-              onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-            />
+            <Label>End Time</Label>
+            <div className="grid grid-cols-3 gap-2">
+              <Input
+                type="date"
+                value={formData.end_date}
+                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+              />
+              <Input
+                type="number"
+                min="0"
+                max="23"
+                value={formData.end_hour}
+                onChange={(e) => setFormData({ ...formData, end_hour: parseInt(e.target.value) })}
+                placeholder="Hour (0-23)"
+              />
+              <Input
+                type="number"
+                min="0"
+                max="59"
+                value={formData.end_minute}
+                onChange={(e) => setFormData({ ...formData, end_minute: parseInt(e.target.value) })}
+                placeholder="Minute (0-59)"
+              />
+            </div>
           </div>
         </div>
 

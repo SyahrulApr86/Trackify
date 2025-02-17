@@ -11,7 +11,11 @@ export async function createTimeProgress(userId: string, data: Partial<TimeProgr
     .insert([{
       title: data.title,
       start_date: data.start_date,
+      start_hour: data.start_hour || 6,
+      start_minute: data.start_minute || 0,
       end_date: data.end_date,
+      end_hour: data.end_hour || 6,
+      end_minute: data.end_minute || 0,
       user_id: userId
     }])
     .select()
@@ -29,7 +33,11 @@ export async function updateTimeProgress(userId: string, progressId: string, upd
     .update({
       title: updates.title,
       start_date: updates.start_date,
-      end_date: updates.end_date
+      start_hour: updates.start_hour,
+      start_minute: updates.start_minute,
+      end_date: updates.end_date,
+      end_hour: updates.end_hour,
+      end_minute: updates.end_minute
     })
     .eq('id', progressId)
     .select()
@@ -63,14 +71,18 @@ export async function getTimeProgress(userId: string): Promise<TimeProgressWithP
 
   return progress.map(item => {
     const startDate = new Date(item.start_date);
+    startDate.setHours(item.start_hour || 6, item.start_minute || 0, 0);
+    
     const endDate = new Date(item.end_date);
-    const today = new Date();
+    endDate.setHours(item.end_hour || 6, item.end_minute || 0, 0);
     
-    const totalDays = differenceInDays(endDate, startDate);
-    const daysPassed = differenceInDays(today, startDate);
-    const daysRemaining = differenceInDays(endDate, today);
+    const now = new Date();
     
-    let progress = Math.round((daysPassed / totalDays) * 100);
+    const totalMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+    const minutesPassed = (now.getTime() - startDate.getTime()) / (1000 * 60);
+    const daysRemaining = differenceInDays(endDate, now);
+    
+    let progress = Math.round((minutesPassed / totalMinutes) * 100);
     
     // Ensure progress stays within 0-100 range
     progress = Math.max(0, Math.min(100, progress));

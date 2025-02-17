@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from './ui/alert-dialog';
 import { TimeProgressWithProgress } from '@/types/timeProgress';
+import { deleteTimeProgress } from '@/lib/timeProgressOperations';
 
 export function TimeProgressBar() {
   const { user } = useAuthStore();
@@ -46,6 +47,12 @@ export function TimeProgressBar() {
       </div>
     );
   }
+
+  const formatTime = (hour?: number | null, minute?: number | null) => {
+    const h = hour ?? 6;
+    const m = minute ?? 0;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className="space-y-6">
@@ -90,9 +97,13 @@ export function TimeProgressBar() {
             </div>
             
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>{format(new Date(item.start_date), 'dd MMM yyyy')}</span>
+              <span>
+                {format(new Date(item.start_date), 'dd MMM yyyy')} {formatTime(item.start_hour, item.start_minute)}
+              </span>
               <span>{item.progress}% completed</span>
-              <span>{format(new Date(item.end_date), 'dd MMM yyyy')}</span>
+              <span>
+                {format(new Date(item.end_date), 'dd MMM yyyy')} {formatTime(item.end_hour, item.end_minute)}
+              </span>
             </div>
           </div>
         ))}

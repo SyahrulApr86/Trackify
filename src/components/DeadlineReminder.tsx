@@ -21,7 +21,10 @@ export function DeadlineReminder({ tasks, onTaskClick }: DeadlineReminderProps) 
   );
 
   const todayTasks = incompleteTasks.filter(
-    task => isToday(new Date(task.deadline))
+    task => {
+      const deadline = new Date(task.deadline);
+      return isToday(deadline) && !isPast(deadline);
+    }
   );
 
   const upcomingTasks = incompleteTasks.filter(

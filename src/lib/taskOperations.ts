@@ -8,59 +8,78 @@ export async function updateTask(
   updates: Partial<Task>
 ) {
   try {
-    // First restore user context
+    // First restore user context with retries
     await restoreUserContext(userId);
     
     let categoryId = null;
     
     if (updates.category) {
-      // Restore context again before managing category
-      await restoreUserContext(userId);
-      
-      const { data: categoryData, error: categoryError } = await supabase
-        .rpc('manage_category', { p_name: updates.category });
-      
-      if (categoryError) throw categoryError;
-      categoryId = categoryData;
+      try {
+        // Restore context before managing category
+        await restoreUserContext(userId);
+        
+        const { data: categoryData, error: categoryError } = await supabase
+          .rpc('manage_category', { p_name: updates.category });
+        
+        if (categoryError) {
+          // If there's an error, try one more time with context restoration
+          await restoreUserContext(userId);
+          const { data: retryData, error: retryError } = await supabase
+            .rpc('manage_category', { p_name: updates.category });
+          
+          if (retryError) throw retryError;
+          categoryId = retryData;
+        } else {
+          categoryId = categoryData;
+        }
+      } catch (error) {
+        console.error('Error managing category:', error);
+        throw new Error(`Failed to manage category: ${error.message}`);
+      }
     }
 
     // Handle tags if they're included in the updates
     if (updates.tags) {
-      // Restore context before handling tags
-      await restoreUserContext(userId);
-      
-      await supabase.rpc('add_task_tags', {
-        p_task_id: taskId,
-        p_tag_names: updates.tags
-      });
-
-      // Remove any existing tags that aren't in the new list
-      const { data: currentTags } = await supabase
-        .from('task_tags')
-        .select('tag:tags (id, name)')
-        .eq('task_id', taskId);
-
-      if (currentTags) {
-        const currentTagNames = currentTags.map(t => t.tag.name);
-        const tagsToRemove = currentTagNames.filter(name => !updates.tags?.includes(name));
+      try {
+        // Restore context before handling tags
+        await restoreUserContext(userId);
         
-        if (tagsToRemove.length > 0) {
-          // Restore context before removing tags
-          await restoreUserContext(userId);
-          
-          const { data: tagsToDelete } = await supabase
-            .from('tags')
-            .select('id')
-            .in('name', tagsToRemove)
-            .eq('user_id', userId);
+        await supabase.rpc('add_task_tags', {
+          p_task_id: taskId,
+          p_tag_names: updates.tags
+        });
 
-          if (tagsToDelete && tagsToDelete.length > 0) {
-            await supabase.rpc('remove_task_tags', {
-              p_task_id: taskId,
-              p_tag_ids: tagsToDelete.map(t => t.id)
-            });
+        // Remove any existing tags that aren't in the new list
+        const { data: currentTags } = await supabase
+          .from('task_tags')
+          .select('tag:tags (id, name)')
+          .eq('task_id', taskId);
+
+        if (currentTags) {
+          const currentTagNames = currentTags.map(t => t.tag.name);
+          const tagsToRemove = currentTagNames.filter(name => !updates.tags?.includes(name));
+          
+          if (tagsToRemove.length > 0) {
+            // Restore context before removing tags
+            await restoreUserContext(userId);
+            
+            const { data: tagsToDelete } = await supabase
+              .from('tags')
+              .select('id')
+              .in('name', tagsToRemove)
+              .eq('user_id', userId);
+
+            if (tagsToDelete && tagsToDelete.length > 0) {
+              await supabase.rpc('remove_task_tags', {
+                p_task_id: taskId,
+                p_tag_ids: tagsToDelete.map(t => t.id)
+              });
+            }
           }
         }
+      } catch (error) {
+        console.error('Error managing tags:', error);
+        throw new Error(`Failed to manage tags: ${error.message}`);
       }
     }
 
@@ -147,23 +166,38 @@ export async function createTask(
   taskData: Partial<Task>
 ) {
   try {
-    // First restore user context
+    // First restore user context with retries
     await restoreUserContext(userId);
     
     let categoryId = null;
     
     if (taskData.category) {
-      // Restore context again before managing category
-      await restoreUserContext(userId);
-      
-      const { data: categoryData, error: categoryError } = await supabase
-        .rpc('manage_category', { p_name: taskData.category });
-      
-      if (categoryError) throw categoryError;
-      categoryId = categoryData;
+      try {
+        // Restore context before managing category
+        await restoreUserContext(userId);
+        
+        const { data: categoryData, error: categoryError } = await supabase
+          .rpc('manage_category', { p_name: taskData.category });
+        
+        if (categoryError) {
+          // If there's an error, try one more time with context restoration
+          await restoreUserContext(userId);
+          const { data: retryData, error: retryError } = await supabase
+            .rpc('manage_category', { p_name: taskData.category });
+          
+          if (retryError) throw retryError;
+          categoryId = retryData;
+        } else {
+          categoryId = categoryData;
+        }
+      } catch (error) {
+        console.error('Error managing category:', error);
+        throw new Error(`Failed to manage category: ${error.message}`);
+      }
     }
 
     // Get the column to determine the correct status
+    await restoreUserContext(userId);
     const { data: column, error: columnError } = await supabase
       .from('columns')
       .select('title')
@@ -205,41 +239,46 @@ export async function createTask(
 
     // Add tags if they're included
     if (taskData.tags && taskData.tags.length > 0) {
-      // Restore context before adding tags
-      await restoreUserContext(userId);
-      
-      await supabase.rpc('add_task_tags', {
-        p_task_id: newTask.id,
-        p_tag_names: taskData.tags
-      });
+      try {
+        // Restore context before adding tags
+        await restoreUserContext(userId);
+        
+        await supabase.rpc('add_task_tags', {
+          p_task_id: newTask.id,
+          p_tag_names: taskData.tags
+        });
 
-      // Fetch the task again to get the updated tags
-      await restoreUserContext(userId);
-      
-      const { data: updatedTask, error: refreshError } = await supabase
-        .from('tasks')
-        .select(`
-          *,
-          category:categories(name),
-          tags:task_tags(
-            tag:tags(
-              id,
-              name,
-              user_id,
-              created_at
+        // Fetch the task again to get the updated tags
+        await restoreUserContext(userId);
+        
+        const { data: updatedTask, error: refreshError } = await supabase
+          .from('tasks')
+          .select(`
+            *,
+            category:categories(name),
+            tags:task_tags(
+              tag:tags(
+                id,
+                name,
+                user_id,
+                created_at
+              )
             )
-          )
-        `)
-        .eq('id', newTask.id)
-        .single();
+          `)
+          .eq('id', newTask.id)
+          .single();
 
-      if (refreshError) throw refreshError;
+        if (refreshError) throw refreshError;
 
-      return {
-        ...updatedTask,
-        category: updatedTask.category?.name,
-        tags: updatedTask.tags.map(t => t.tag)
-      };
+        return {
+          ...updatedTask,
+          category: updatedTask.category?.name,
+          tags: updatedTask.tags.map(t => t.tag)
+        };
+      } catch (error) {
+        console.error('Error managing tags:', error);
+        throw new Error(`Failed to manage tags: ${error.message}`);
+      }
     }
 
     return {
@@ -263,7 +302,7 @@ export async function updateTaskPosition(
   try {
     await restoreUserContext(userId);
     
-    await supabase
+    const { error } = await supabase
       .from('tasks')
       .update({
         column_id: columnId,
@@ -271,6 +310,8 @@ export async function updateTaskPosition(
         status: status
       })
       .eq('id', taskId);
+
+    if (error) throw error;
   } catch (error) {
     console.error('Error updating task position:', error);
     throw error;
@@ -288,14 +329,28 @@ export async function bulkUpdateTasks(
     let categoryId = null;
     
     if (updates.category) {
-      // Restore context before managing category
-      await restoreUserContext(userId);
-      
-      const { data: categoryData, error: categoryError } = await supabase
-        .rpc('manage_category', { p_name: updates.category });
-      
-      if (categoryError) throw categoryError;
-      categoryId = categoryData;
+      try {
+        // Restore context before managing category
+        await restoreUserContext(userId);
+        
+        const { data: categoryData, error: categoryError } = await supabase
+          .rpc('manage_category', { p_name: updates.category });
+        
+        if (categoryError) {
+          // If there's an error, try one more time with context restoration
+          await restoreUserContext(userId);
+          const { data: retryData, error: retryError } = await supabase
+            .rpc('manage_category', { p_name: updates.category });
+          
+          if (retryError) throw retryError;
+          categoryId = retryData;
+        } else {
+          categoryId = categoryData;
+        }
+      } catch (error) {
+        console.error('Error managing category:', error);
+        throw new Error(`Failed to manage category: ${error.message}`);
+      }
     }
 
     const taskUpdates = {

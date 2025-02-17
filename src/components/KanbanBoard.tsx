@@ -34,7 +34,7 @@ import { updateTask, deleteTask, archiveTask, unarchiveTask, createTask, updateT
 export function KanbanBoard() {
   const { user } = useAuthStore();
   const { board, setBoard, loading: boardLoading, error: boardError, initializeBoard } = useBoard(user?.id);
-  const { categories, setCategories, loading: categoriesLoading } = useCategories(user?.id);
+  const { categories, setCategories, loading: categoriesLoading, loadCategories } = useCategories(user?.id);
   const { archivedTasks, loading: archiveLoading, loadArchivedTasks } = useArchive(user?.id);
   const { tags, loading: tagsLoading } = useTags(user?.id);
 
@@ -211,6 +211,12 @@ export function KanbanBoard() {
       });
 
       setAddingTaskToColumn(null);
+      setSelectedCategory(null);
+      
+      // Refresh categories list if a new category was created
+      if (taskData.category && !categories.some(cat => cat.name === taskData.category)) {
+        await loadCategories();
+      }
     } catch (error: any) {
       console.error('Error adding task:', error);
     }
@@ -485,6 +491,7 @@ export function KanbanBoard() {
           }}
           categories={categories}
           defaultCategory={selectedCategory}
+          onCategoriesChange={loadCategories}
         />
       )}
 

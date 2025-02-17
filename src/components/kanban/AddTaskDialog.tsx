@@ -15,6 +15,7 @@ interface AddTaskDialogProps {
   onCancel: () => void;
   categories: Category[];
   defaultCategory?: string | null;
+  onCategoriesChange?: () => void;
 }
 
 export function AddTaskDialog({
@@ -22,7 +23,8 @@ export function AddTaskDialog({
   onAdd,
   onCancel,
   categories,
-  defaultCategory
+  defaultCategory,
+  onCategoriesChange
 }: AddTaskDialogProps) {
   // Get today's date at 23:59
   const today = new Date();
@@ -75,6 +77,11 @@ export function AddTaskDialog({
       category: category || null,
       tags: taskForm.tags
     });
+
+    // If a new category was created and onCategoriesChange is provided, call it
+    if (customCategory && taskForm.newCategory && onCategoriesChange) {
+      onCategoriesChange();
+    }
   };
 
   return (

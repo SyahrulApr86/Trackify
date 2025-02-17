@@ -40,7 +40,7 @@ export async function signUp(username: string, displayName: string, password: st
   if (!user) throw new Error('Failed to create user');
 
   // Set user context for RLS
-  await supabase.rpc('set_user_context', { user_id: user.id });
+  await setUserContext(user.id);
 
   return {
     id: user.id,
@@ -68,7 +68,7 @@ export async function signIn(username: string, password: string): Promise<User> 
   }
 
   // Set user context for RLS
-  await supabase.rpc('set_user_context', { user_id: user.id });
+  await setUserContext(user.id);
 
   return {
     id: user.id,
@@ -81,30 +81,57 @@ export async function signOut(): Promise<void> {
   await supabase.rpc('clear_user_context');
 }
 
+async function setUserContext(userId: string): Promise<void> {
+  try {
+    await supabase.rpc('set_user_context', { user_id: userId });
+    
+    // Verify the context was set correctly
+    const { error: verifyError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (verifyError) {
+      throw new Error('Failed to verify user context');
+    }
+  } catch (error) {
+    console.error('Error setting user context:', error);
+    throw error;
+  }
+}
+
 // Add a function to restore the user context with retries
 export async function restoreUserContext(userId: string, maxRetries = 3): Promise<void> {
-  let retries = 0;
-  while (retries < maxRetries) {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      await supabase.rpc('set_user_context', { user_id: userId });
+      await setUserContext(userId);
       
       // Verify the context was set by making a test query
-      const { error } = await supabase
+      const { error: verifyError } = await supabase
         .from('users')
         .select('id')
         .eq('id', userId)
         .single();
       
-      if (!error) {
-        return; // Context was successfully set
+      if (!verifyError) {
+        return; // Context was successfully set and verified
       }
-    } catch (error) {
-      console.error(`Failed to restore user context (attempt ${retries + 1}):`, error);
-    }
-    retries++;
-    if (retries < maxRetries) {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+      
+      lastError = new Error('Failed to verify user context');
+    } catch (error: any) {
+      lastError = error;
+      console.error(`Failed to restore user context (attempt ${attempt}):`, error);
+      
+      if (attempt < maxRetries) {
+        // Wait before retrying, with exponential backoff
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt - 1) * 1000));
+      }
     }
   }
-  throw new Error('Failed to restore user context after multiple attempts');
+
+  // If we get here, all attempts failed
+  throw new Error(`Failed to restore user context after ${maxRetries} attempts: ${lastError?.message}`);
 }

@@ -1,151 +1,143 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Loader2, Pencil, Trash2 } from 'lucide-react';
-import { useAuthStore } from '@/store/authStore';
-import { useTimeProgress } from '@/hooks/useTimeProgress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
-import { TimeProgressDialog } from './TimeProgressDialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from './ui/alert-dialog';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { useAuthStore } from '@/store/authStore';
+import { createTimeProgress, updateTimeProgress } from '@/lib/timeProgressOperations';
 import { TimeProgressWithProgress } from '@/types/timeProgress';
 
-export function TimeProgressBar() {
+interface TimeProgressDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+  editingProgress?: TimeProgressWithProgress | null;
+}
+
+export function TimeProgressDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+  editingProgress
+}: TimeProgressDialogProps) {
   const { user } = useAuthStore();
-  const { progress, loading, error, loadProgress } = useTimeProgress(user?.id);
-  const [showDialog, setShowDialog] = React.useState(false);
-  const [editingProgress, setEditingProgress] = React.useState<TimeProgressWithProgress | null>(null);
-  const [progressToDelete, setProgressToDelete] = React.useState<TimeProgressWithProgress | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    start_date: format(new Date(), 'yyyy-MM-dd'),
+    end_date: format(new Date(), 'yyyy-MM-dd')
+  });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-16">
-        <Loader2 className="w-5 h-5 animate-spin text-primary" />
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (editingProgress) {
+      setFormData({
+        title: editingProgress.title,
+        start_date: format(new Date(editingProgress.start_date), 'yyyy-MM-dd'),
+        end_date: format(new Date(editingProgress.end_date), 'yyyy-MM-dd')
+      });
+    } else {
+      setFormData({
+        title: '',
+        start_date: format(new Date(), 'yyyy-MM-dd'),
+        end_date: format(new Date(), 'yyyy-MM-dd')
+      });
+    }
+  }, [editingProgress]);
 
-  if (error) {
-    return (
-      <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
-        <p className="text-destructive">{error}</p>
-        <Button
-          onClick={loadProgress}
-          variant="outline"
-          className="mt-2"
-        >
-          Try again
-        </Button>
-      </div>
-    );
-  }
+  const handleSubmit = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      if (editingProgress) {
+        await updateTimeProgress(user.id, editingProgress.id, formData);
+      } else {
+        await createTimeProgress(user.id, formData);
+      }
+      
+      onSuccess();
+      onOpenChange(false);
+      
+      // Reset form
+      setFormData({
+        title: '',
+        start_date: format(new Date(), 'yyyy-MM-dd'),
+        end_date: format(new Date(), 'yyyy-MM-dd')
+      });
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Time Progress</h2>
-        <Button onClick={() => setShowDialog(true)}>Add Progress</Button>
-      </div>
-
-      <div className="space-y-6">
-        {progress.map((item) => (
-          <div key={item.id} className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">{item.title}</h3>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  {item.daysRemaining} days remaining
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setEditingProgress(item)}
-                  className="h-8 w-8"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setProgressToDelete(item)}
-                  className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {editingProgress ? 'Edit Progress Item' : 'Add Time Progress'}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4 py-4">
+          {error && (
+            <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+              {error}
             </div>
-            
-            <div className="h-4 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary transition-all duration-500"
-                style={{ width: `${item.progress}%` }}
-              />
-            </div>
-            
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>{format(new Date(item.start_date), 'dd MMM yyyy')}</span>
-              <span>{item.progress}% completed</span>
-              <span>{format(new Date(item.end_date), 'dd MMM yyyy')}</span>
-            </div>
+          )}
+          
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="e.g., Semester Progress, Project Timeline"
+            />
           </div>
-        ))}
-
-        {progress.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No progress items yet. Add one to get started!</p>
+          
+          <div className="space-y-2">
+            <Label htmlFor="start_date">Start Date</Label>
+            <Input
+              id="start_date"
+              type="date"
+              value={formData.start_date}
+              onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+            />
           </div>
-        )}
-      </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="end_date">End Date</Label>
+            <Input
+              id="end_date"
+              type="date"
+              value={formData.end_date}
+              onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+            />
+          </div>
+        </div>
 
-      <TimeProgressDialog
-        open={showDialog || !!editingProgress}
-        onOpenChange={(open) => {
-          setShowDialog(open);
-          if (!open) setEditingProgress(null);
-        }}
-        onSuccess={loadProgress}
-        editingProgress={editingProgress}
-      />
-
-      <AlertDialog
-        open={!!progressToDelete}
-        onOpenChange={(open) => !open && setProgressToDelete(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Progress Item</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{progressToDelete?.title}"? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={async () => {
-                if (progressToDelete && user) {
-                  try {
-                    await deleteTimeProgress(user.id, progressToDelete.id);
-                    await loadProgress();
-                    setProgressToDelete(null);
-                  } catch (error) {
-                    console.error('Error deleting progress:', error);
-                  }
-                }
-              }}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={loading || !formData.title.trim() || !formData.start_date || !formData.end_date}
+          >
+            {loading ? (editingProgress ? 'Saving...' : 'Adding...') : (editingProgress ? 'Save Changes' : 'Add Progress')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

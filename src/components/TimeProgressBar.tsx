@@ -1,15 +1,28 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Pencil, Trash2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useTimeProgress } from '@/hooks/useTimeProgress';
 import { Button } from './ui/button';
 import { TimeProgressDialog } from './TimeProgressDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
+import { TimeProgressWithProgress } from '@/types/timeProgress';
 
 export function TimeProgressBar() {
   const { user } = useAuthStore();
   const { progress, loading, error, loadProgress } = useTimeProgress(user?.id);
   const [showDialog, setShowDialog] = React.useState(false);
+  const [editingProgress, setEditingProgress] = React.useState<TimeProgressWithProgress | null>(null);
+  const [progressToDelete, setProgressToDelete] = React.useState<TimeProgressWithProgress | null>(null);
 
   if (loading) {
     return (
@@ -46,9 +59,27 @@ export function TimeProgressBar() {
           <div key={item.id} className="space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">{item.title}</h3>
-              <span className="text-sm text-muted-foreground">
-                {item.daysRemaining} days remaining
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {item.daysRemaining} days remaining
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setEditingProgress(item)}
+                  className="h-8 w-8"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setProgressToDelete(item)}
+                  className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             
             <div className="h-4 bg-muted rounded-full overflow-hidden">
@@ -74,10 +105,47 @@ export function TimeProgressBar() {
       </div>
 
       <TimeProgressDialog
-        open={showDialog}
-        onOpenChange={setShowDialog}
+        open={showDialog || !!editingProgress}
+        onOpenChange={(open) => {
+          setShowDialog(open);
+          if (!open) setEditingProgress(null);
+        }}
         onSuccess={loadProgress}
+        editingProgress={editingProgress}
       />
+
+      <AlertDialog
+        open={!!progressToDelete}
+        onOpenChange={(open) => !open && setProgressToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Progress Item</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{progressToDelete?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (progressToDelete && user) {
+                  try {
+                    await deleteTimeProgress(user.id, progressToDelete.id);
+                    await loadProgress();
+                    setProgressToDelete(null);
+                  } catch (error) {
+                    console.error('Error deleting progress:', error);
+                  }
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

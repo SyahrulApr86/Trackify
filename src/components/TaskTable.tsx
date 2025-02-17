@@ -40,7 +40,8 @@ import {
   Check,
   Pencil,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Flag
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Task, TaskStatus, Category } from '../types/task';
@@ -54,7 +55,7 @@ interface TaskTableProps {
   onBulkUpdateTasks: (taskIds: string[], updates: Partial<Task>) => Promise<void>;
 }
 
-type SortField = 'deadline' | 'category' | 'status';
+type SortField = 'deadline' | 'category' | 'status' | 'priority';
 type SortOrder = 'asc' | 'desc';
 
 export function TaskTable({ 
@@ -83,6 +84,12 @@ export function TaskTable({
 
   const sortedTasks = [...tasks].sort((a, b) => {
     if (!sortField) return 0;
+    
+    if (sortField === 'priority') {
+      return sortOrder === 'asc' 
+        ? a.priority - b.priority
+        : b.priority - a.priority;
+    }
     
     const aValue = a[sortField];
     const bValue = b[sortField];
@@ -122,7 +129,8 @@ export function TaskTable({
       deadline: task.deadline,
       category: task.category,
       status: task.status,
-      tags: task.tags?.map(tag => tag.name) || []
+      tags: task.tags?.map(tag => tag.name) || [],
+      priority: task.priority
     });
   };
 
@@ -230,6 +238,12 @@ export function TaskTable({
                   <ArrowUpDown size={16} />
                 </div>
               </TableHead>
+              <TableHead className="w-[120px] cursor-pointer" onClick={() => handleSort('priority')}>
+                <div className="flex items-center gap-1">
+                  Priority
+                  <ArrowUpDown size={16} />
+                </div>
+              </TableHead>
               <TableHead>Tags</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
@@ -326,6 +340,36 @@ export function TaskTable({
                         'bg-gray-100 text-gray-700'}`}>
                       {task.status}
                     </span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingTask === task.id ? (
+                    <Select
+                      value={editValues.priority?.toString()}
+                      onValueChange={value => setEditValues({ ...editValues, priority: parseInt(value) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="99999">No Priority</SelectItem>
+                        {[1, 2, 3, 4, 5].map((p) => (
+                          <SelectItem key={p} value={p.toString()}>
+                            <div className="flex items-center gap-2">
+                              <Flag className="w-4 h-4" />
+                              Priority {p}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    task.priority < 99999 ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                        <Flag className="w-3 h-3" />
+                        P{task.priority}
+                      </span>
+                    ) : '-'
                   )}
                 </TableCell>
                 <TableCell>

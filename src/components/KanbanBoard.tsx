@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowUpDown } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { Button } from './ui/button';
 import { TaskTable } from './TaskTable';
@@ -19,6 +19,13 @@ import { useCategories } from '@/hooks/useCategories';
 import { useArchive } from '@/hooks/useArchive';
 import { useTags } from '@/hooks/useTags';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -30,6 +37,9 @@ import {
 } from './ui/alert-dialog';
 import { AddTaskDialog } from './kanban/AddTaskDialog';
 import { updateTask, deleteTask, archiveTask, unarchiveTask, createTask, updateTaskPosition, bulkUpdateTasks } from '@/lib/taskOperations';
+
+type SortField = 'deadline' | 'priority' | 'none';
+type SortOrder = 'asc' | 'desc';
 
 export function KanbanBoard() {
   const { user } = useAuthStore();
@@ -54,6 +64,10 @@ export function KanbanBoard() {
   });
   const [categoryViewStatus, setCategoryViewStatus] = useState<TaskStatus | 'all'>('all');
   const [categoryViewTag, setCategoryViewTag] = useState<string | 'all'>('all');
+
+  // Add sorting state
+  const [sortField, setSortField] = useState<SortField>('none');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   // Add search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -260,6 +274,29 @@ export function KanbanBoard() {
     );
   };
 
+  const sortTasks = (tasks: Task[]) => {
+    if (sortField === 'none') return tasks;
+
+    return [...tasks].sort((a, b) => {
+      if (sortField === 'deadline') {
+        if (!a.deadline && !b.deadline) return 0;
+        if (!a.deadline) return sortOrder === 'asc' ? 1 : -1;
+        if (!b.deadline) return sortOrder === 'asc' ? -1 : 1;
+        return sortOrder === 'asc'
+          ? new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
+          : new Date(b.deadline).getTime() - new Date(a.deadline).getTime();
+      }
+      
+      if (sortField === 'priority') {
+        return sortOrder === 'asc'
+          ? a.priority - b.priority
+          : b.priority - a.priority;
+      }
+      
+      return 0;
+    });
+  };
+
   const getFilteredBoard = () => {
     if (!board) return null;
 
@@ -267,11 +304,13 @@ export function KanbanBoard() {
       ...board,
       columns: board.columns.map(column => ({
         ...column,
-        tasks: filterTasksByTag(
-          filterTasksBySearch(column.tasks),
-          kanbanTagFilter
-        ).filter(task => 
-          kanbanFilter === 'all' || task.category === kanbanFilter
+        tasks: sortTasks(
+          filterTasksByTag(
+            filterTasksBySearch(column.tasks),
+            kanbanTagFilter
+          ).filter(task => 
+            kanbanFilter === 'all' || task.category === kanbanFilter
+          )
         )
       }))
     };
@@ -290,10 +329,12 @@ export function KanbanBoard() {
         return matchesCategory && matchesStatus;
       });
     } else {
-      return filterTasksByTag(searchFilteredTasks, categoryViewTag).filter(task => {
-        const matchesStatus = categoryViewStatus === 'all' || task.status === categoryViewStatus;
-        return matchesStatus;
-      });
+      return sortTasks(
+        filterTasksByTag(searchFilteredTasks, categoryViewTag).filter(task => {
+          const matchesStatus = categoryViewStatus === 'all' || task.status === categoryViewStatus;
+          return matchesStatus;
+        })
+      );
     }
   };
 
@@ -350,11 +391,38 @@ export function KanbanBoard() {
       ) : (
         <>
           <div className="space-y-4">
-            <TaskSearch
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search task titles and descriptions..."
-            />
+            <div className="flex items-center gap-4">
+              <TaskSearch
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search task titles and descriptions..."
+              />
+
+              <Select
+                value={sortField}
+                onValueChange={(value) => setSortField(value as SortField)}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Sort by..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Sorting</SelectItem>
+                  <SelectItem value="deadline">Deadline</SelectItem>
+                  <SelectItem value="priority">Priority</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {sortField !== 'none' && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setSortOrder(order => order === 'asc' ? 'desc' : 'asc')}
+                  className="h-10 w-10"
+                >
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
 
             {viewMode === 'kanban' && (
               <TaskFilters

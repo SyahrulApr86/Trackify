@@ -172,12 +172,12 @@ export function DailyNotes() {
         open={!!viewingNote}
         onOpenChange={(open) => !open && setViewingNote(null)}
       >
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{viewingNote?.title}</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
+          <div className="flex-1 space-y-4 py-4 overflow-hidden">
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
@@ -190,7 +190,7 @@ export function DailyNotes() {
             </div>
             
             {viewingNote?.content && (
-              <div className="bg-muted/50 rounded-lg p-4">
+              <div className="bg-muted/50 rounded-lg p-6 overflow-y-auto max-h-[calc(90vh-12rem)]">
                 <p className="whitespace-pre-wrap">{viewingNote.content}</p>
               </div>
             )}
@@ -231,14 +231,14 @@ export function DailyNotes() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>
               {isCreating ? 'Create Note' : 'Edit Note'}
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
+          <div className="flex-1 space-y-4 py-4 overflow-hidden">
             <div className="space-y-2">
               <Input
                 type="date"
@@ -253,9 +253,9 @@ export function DailyNotes() {
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 flex-1">
               <textarea
-                className="w-full h-32 px-3 py-2 text-sm rounded-md border border-input bg-transparent shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="w-full h-[calc(90vh-16rem)] px-4 py-3 text-base rounded-md border border-input bg-transparent shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
                 placeholder="Note content..."
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}

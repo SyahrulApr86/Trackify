@@ -54,7 +54,6 @@ export function KanbanBoard() {
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   
-  // Separate filter states for different views
   const [kanbanFilter, setKanbanFilter] = useState<string | 'all'>('all');
   const [kanbanTagFilter, setKanbanTagFilter] = useState<string | 'all'>('all');
   const [tableFilters, setTableFilters] = useState({
@@ -65,11 +64,8 @@ export function KanbanBoard() {
   const [categoryViewStatus, setCategoryViewStatus] = useState<TaskStatus | 'all'>('all');
   const [categoryViewTag, setCategoryViewTag] = useState<string | 'all'>('all');
 
-  // Add sorting state
   const [sortField, setSortField] = useState<SortField>('none');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-
-  // Add search state
   const [searchQuery, setSearchQuery] = useState('');
 
   const loading = boardLoading || categoriesLoading || archiveLoading || tagsLoading;
@@ -91,31 +87,39 @@ export function KanbanBoard() {
     const task = sourceColumn.tasks.find(t => t.id === draggableId);
     if (!task) return;
 
-    const updatedTask = {
-      ...task,
-      column_id: destination.droppableId,
-      status: destColumn.title as Task['status']
+    // Immediately update the board state to reflect the change
+    const newBoard = {
+      ...board,
+      columns: board.columns.map(col => {
+        if (col.id === source.droppableId) {
+          return {
+            ...col,
+            tasks: col.tasks.filter(t => t.id !== draggableId)
+          };
+        }
+        if (col.id === destination.droppableId) {
+          const updatedTask = {
+            ...task,
+            column_id: destination.droppableId,
+            status: destColumn.title as Task['status'],
+            order: destination.index
+          };
+          const newTasks = [...col.tasks];
+          newTasks.splice(destination.index, 0, updatedTask);
+          return {
+            ...col,
+            tasks: newTasks.map((t, index) => ({ ...t, order: index }))
+          };
+        }
+        return col;
+      })
     };
 
-    const newSourceTasks = Array.from(sourceColumn.tasks);
-    newSourceTasks.splice(source.index, 1);
-
-    const newDestTasks = Array.from(destColumn.tasks);
-    newDestTasks.splice(destination.index, 0, updatedTask);
-
-    const newColumns = board.columns.map(col => {
-      if (col.id === source.droppableId) {
-        return { ...col, tasks: newSourceTasks };
-      }
-      if (col.id === destination.droppableId) {
-        return { ...col, tasks: newDestTasks };
-      }
-      return col;
-    });
-
-    setBoard({ ...board, columns: newColumns });
+    // Update the state immediately
+    setBoard(newBoard);
 
     try {
+      // Update the task's position in the database
       await updateTaskPosition(
         user.id,
         draggableId,
@@ -124,11 +128,16 @@ export function KanbanBoard() {
         destination.index
       );
 
-      for (const [index, task] of newDestTasks.entries()) {
-        await updateTaskPosition(user.id, task.id, destination.droppableId, task.status, index);
+      // Update the order of other tasks in the destination column
+      const destTasks = newBoard.columns.find(col => col.id === destination.droppableId)?.tasks || [];
+      for (const [index, t] of destTasks.entries()) {
+        if (t.id !== draggableId) {
+          await updateTaskPosition(user.id, t.id, destination.droppableId, t.status, index);
+        }
       }
     } catch (error) {
       console.error('Error updating task position:', error);
+      // Revert the board state on error
       initializeBoard();
     }
   };
@@ -227,7 +236,6 @@ export function KanbanBoard() {
       setAddingTaskToColumn(null);
       setSelectedCategory(null);
       
-      // Refresh categories list if a new category was created
       if (taskData.category && !categories.some(cat => cat.name === taskData.category)) {
         await loadCategories();
       }
@@ -282,15 +290,13 @@ export function KanbanBoard() {
         if (!a.deadline && !b.deadline) return 0;
         if (!a.deadline) return sortOrder === 'asc' ? 1 : -1;
         if (!b.deadline) return sortOrder === 'asc' ? -1 : 1;
-        return sortOrder === 'asc'
-          ? new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
-          : new Date(b.deadline).getTime() - new Date(a.deadline).getTime();
+        const result = new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+        return sortOrder === 'asc' ? result : -result;
       }
       
       if (sortField === 'priority') {
-        return sortOrder === 'asc'
-          ? a.priority - b.priority
-          : b.priority - a.priority;
+        const result = a.priority - b.priority;
+        return sortOrder === 'asc' ? result : -result;
       }
       
       return 0;
@@ -311,7 +317,10 @@ export function KanbanBoard() {
           ).filter(task => 
             kanbanFilter === 'all' || task.category === kanbanFilter
           )
-        )
+        ).map((task, index) => ({
+          ...task,
+          order: index
+        }))
       }))
     };
   };
@@ -484,7 +493,6 @@ export function KanbanBoard() {
                 </div>
               </DragDropContext>
 
-              {/* Time Progress Bar at the bottom */}
               <div className="mt-8 pt-8 border-t">
                 <TimeProgressBar />
               </div>
@@ -500,7 +508,6 @@ export function KanbanBoard() {
                 onCategoriesChange={setCategories}
               />
 
-              {/* Time Progress Bar at the bottom */}
               <div className="mt-8 pt-8 border-t">
                 <TimeProgressBar />
               </div>
@@ -515,7 +522,6 @@ export function KanbanBoard() {
                 categories={categories}
               />
 
-              {/* Time Progress Bar at the bottom */}
               <div className="mt-8 pt-8 border-t">
                 <TimeProgressBar />
               </div>

@@ -47,6 +47,9 @@ export function DeadlineReminder({ tasks, onTaskClick }: DeadlineReminderProps) 
     }
   };
 
+  // Ensure each task appears only in one section
+  const processedTaskIds = new Set<string>();
+
   return (
     <div className="space-y-2">
       {overdueTasks.length > 0 && (
@@ -56,25 +59,29 @@ export function DeadlineReminder({ tasks, onTaskClick }: DeadlineReminderProps) 
             <h3 className="font-semibold">Overdue Tasks</h3>
           </div>
           <div className="space-y-2">
-            {overdueTasks.map(task => (
-              <button
-                key={task.id}
-                onClick={() => onTaskClick(task)}
-                className="w-full text-left bg-background/50 hover:bg-background/80 rounded-md p-3 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-medium">{task.title}</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Due {format(new Date(task.deadline), 'MMM d, yyyy HH:mm')}
-                    </p>
+            {overdueTasks.map(task => {
+              if (processedTaskIds.has(task.id)) return null;
+              processedTaskIds.add(task.id);
+              return (
+                <button
+                  key={`overdue-${task.id}`}
+                  onClick={() => onTaskClick(task)}
+                  className="w-full text-left bg-background/50 hover:bg-background/80 rounded-md p-3 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-medium">{task.title}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Due {format(new Date(task.deadline), 'MMM d, yyyy HH:mm')}
+                      </p>
+                    </div>
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClasses(task.status)}`}>
+                      {task.status}
+                    </span>
                   </div>
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClasses(task.status)}`}>
-                    {task.status}
-                  </span>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -86,25 +93,29 @@ export function DeadlineReminder({ tasks, onTaskClick }: DeadlineReminderProps) 
             <h3 className="font-semibold">Due Today</h3>
           </div>
           <div className="space-y-2">
-            {todayTasks.map(task => (
-              <button
-                key={task.id}
-                onClick={() => onTaskClick(task)}
-                className="w-full text-left bg-background/50 hover:bg-background/80 rounded-md p-3 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-medium">{task.title}</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Due {format(new Date(task.deadline), 'HH:mm')}
-                    </p>
+            {todayTasks.map(task => {
+              if (processedTaskIds.has(task.id)) return null;
+              processedTaskIds.add(task.id);
+              return (
+                <button
+                  key={`today-${task.id}`}
+                  onClick={() => onTaskClick(task)}
+                  className="w-full text-left bg-background/50 hover:bg-background/80 rounded-md p-3 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-medium">{task.title}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Due {format(new Date(task.deadline), 'HH:mm')}
+                      </p>
+                    </div>
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClasses(task.status)}`}>
+                      {task.status}
+                    </span>
                   </div>
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClasses(task.status)}`}>
-                    {task.status}
-                  </span>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -116,25 +127,29 @@ export function DeadlineReminder({ tasks, onTaskClick }: DeadlineReminderProps) 
             <h3 className="font-semibold">Upcoming Deadlines</h3>
           </div>
           <div className="space-y-2">
-            {upcomingTasks.map(task => (
-              <button
-                key={task.id}
-                onClick={() => onTaskClick(task)}
-                className="w-full text-left bg-background/50 hover:bg-background/80 rounded-md p-3 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-medium">{task.title}</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Due {format(new Date(task.deadline), 'MMM d, yyyy HH:mm')}
-                    </p>
+            {upcomingTasks.map(task => {
+              if (processedTaskIds.has(task.id)) return null;
+              processedTaskIds.add(task.id);
+              return (
+                <button
+                  key={`upcoming-${task.id}`}
+                  onClick={() => onTaskClick(task)}
+                  className="w-full text-left bg-background/50 hover:bg-background/80 rounded-md p-3 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-medium">{task.title}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Due {format(new Date(task.deadline), 'MMM d, yyyy HH:mm')}
+                      </p>
+                    </div>
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClasses(task.status)}`}>
+                      {task.status}
+                    </span>
                   </div>
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClasses(task.status)}`}>
-                    {task.status}
-                  </span>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

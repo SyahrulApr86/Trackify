@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format, parse, isValid } from 'date-fns';
-import { Calendar, Clock, Archive } from 'lucide-react';
+import { Calendar, Clock, Archive, Flag } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -35,7 +35,8 @@ export function TaskDetailsDialog({
     description: task.description || '',
     deadline: task.deadline ? format(new Date(task.deadline), "yyyy-MM-dd'T'HH:mm") : '',
     category: task.category || '',
-    tags: [] as string[]
+    tags: [] as string[],
+    priority: task.priority
   });
   const [loading, setLoading] = useState(true);
 
@@ -128,6 +129,28 @@ export function TaskDetailsDialog({
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="priority">Priority</Label>
+                <Select
+                  value={formData.priority.toString()}
+                  onValueChange={(value) => setFormData({ ...formData, priority: parseInt(value) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="99999">No Priority</SelectItem>
+                    {[1, 2, 3, 4, 5].map((p) => (
+                      <SelectItem key={p} value={p.toString()}>
+                        <div className="flex items-center gap-2">
+                          <Flag className="w-4 h-4" />
+                          Priority {p}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="deadline">Deadline</Label>
                 <Input
                   id="deadline"
@@ -166,7 +189,15 @@ export function TaskDetailsDialog({
             </>
           ) : (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">{task.title}</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">{task.title}</h3>
+                {task.priority < 99999 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-700">
+                    <Flag className="w-4 h-4" />
+                    Priority {task.priority}
+                  </span>
+                )}
+              </div>
               
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Description</Label>

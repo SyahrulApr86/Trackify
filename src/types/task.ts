@@ -23,6 +23,7 @@ export interface Task {
   completed_at?: string;
   archived_at?: string;
   tags?: Tag[];
+  priority: number;
 }
 
 export interface Category {

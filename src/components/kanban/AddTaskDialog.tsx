@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Calendar } from 'lucide-react';
+import { X, Calendar, Flag } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -37,7 +37,8 @@ export function AddTaskDialog({
     deadline: defaultDeadline,
     category: defaultCategory || '',
     newCategory: '',
-    tags: [] as string[]
+    tags: [] as string[],
+    priority: 99999
   });
   const [customCategory, setCustomCategory] = useState(false);
   const [hasDeadline, setHasDeadline] = useState(true);
@@ -75,7 +76,8 @@ export function AddTaskDialog({
       description: taskForm.description || null,
       deadline: deadline,
       category: category || null,
-      tags: taskForm.tags
+      tags: taskForm.tags,
+      priority: taskForm.priority
     });
 
     // If a new category was created and onCategoriesChange is provided, call it
@@ -108,6 +110,28 @@ export function AddTaskDialog({
               onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
               placeholder="Task description..."
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="priority">Priority</Label>
+            <Select
+              value={taskForm.priority.toString()}
+              onValueChange={(value) => setTaskForm({ ...taskForm, priority: parseInt(value) })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="99999">No Priority</SelectItem>
+                {[1, 2, 3, 4, 5].map((p) => (
+                  <SelectItem key={p} value={p.toString()}>
+                    <div className="flex items-center gap-2">
+                      <Flag className="w-4 h-4" />
+                      Priority {p}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">

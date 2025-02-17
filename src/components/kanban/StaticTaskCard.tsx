@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Flag } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Task } from '@/types/task';
 
@@ -18,7 +18,15 @@ export function StaticTaskCard({ task, onDelete, onClick }: StaticTaskCardProps)
       <div className="flex items-start gap-2">
         <div className="flex-1 space-y-1">
           <div className="flex items-start justify-between">
-            <p className="font-medium">{task.title}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-medium">{task.title}</p>
+              {task.priority < 99999 && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                  <Flag className="w-3 h-3" />
+                  P{task.priority}
+                </span>
+              )}
+            </div>
             <Button
               variant="ghost"
               size="icon"

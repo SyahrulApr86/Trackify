@@ -219,7 +219,8 @@ export async function createTask(
         column_id: columnId,
         user_id: userId,
         status: column.title,
-        order: 0
+        order: 0,
+        priority: taskData.priority || 99999 // Ensure priority is included
       }])
       .select(`
         *,

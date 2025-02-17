@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Calendar } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -38,6 +38,7 @@ export function AddTaskDialog({
     tags: [] as string[]
   });
   const [customCategory, setCustomCategory] = useState(false);
+  const [hasDeadline, setHasDeadline] = useState(true);
 
   const handleDeadlineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -58,8 +59,8 @@ export function AddTaskDialog({
   const handleSubmit = async () => {
     const category = customCategory ? taskForm.newCategory : taskForm.category;
     
-    // Ensure the deadline is in ISO format for consistency
-    let deadline = taskForm.deadline;
+    // Only include deadline if hasDeadline is true
+    let deadline = hasDeadline ? taskForm.deadline : null;
     if (deadline) {
       const date = parse(deadline, "yyyy-MM-dd'T'HH:mm", new Date());
       if (isValid(date)) {
@@ -70,7 +71,7 @@ export function AddTaskDialog({
     await onAdd(columnId, {
       title: taskForm.title,
       description: taskForm.description || null,
-      deadline: deadline || null,
+      deadline: deadline,
       category: category || null,
       tags: taskForm.tags
     });
@@ -102,13 +103,29 @@ export function AddTaskDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="deadline">Deadline</Label>
-            <Input
-              id="deadline"
-              type="datetime-local"
-              value={taskForm.deadline}
-              onChange={handleDeadlineChange}
-            />
+            <div className="flex items-center justify-between">
+              <Label htmlFor="deadline">Deadline</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setHasDeadline(!hasDeadline)}
+                className="h-8 px-2 text-muted-foreground"
+              >
+                {hasDeadline ? 'Remove' : 'Add'} Deadline
+              </Button>
+            </div>
+            {hasDeadline && (
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="deadline"
+                  type="datetime-local"
+                  value={taskForm.deadline}
+                  onChange={handleDeadlineChange}
+                />
+              </div>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>

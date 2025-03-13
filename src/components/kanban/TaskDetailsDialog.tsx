@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format, parse, isValid } from 'date-fns';
-import { Calendar, Clock, Archive, Flag } from 'lucide-react';
+import { Calendar, Clock, Archive, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -14,18 +14,22 @@ import { useTags } from '@/hooks/useTags';
 
 interface TaskDetailsDialogProps {
   task: Task;
+  tasks?: Task[]; // Optional array of related tasks (e.g., tasks due on same date)
   onClose: () => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onArchive?: (taskId: string) => Promise<void>;
   categories: Category[];
+  onTaskChange?: (task: Task) => void; // Callback when switching between tasks
 }
 
 export function TaskDetailsDialog({
   task,
+  tasks,
   onClose,
   onUpdate,
   onArchive,
-  categories
+  categories,
+  onTaskChange
 }: TaskDetailsDialogProps) {
   const { user } = useAuthStore();
   const { tags: allTags } = useTags(user?.id);
@@ -39,6 +43,11 @@ export function TaskDetailsDialog({
     priority: task.priority
   });
   const [loading, setLoading] = useState(true);
+
+  // Find current task index in tasks array if provided
+  const currentIndex = tasks ? tasks.findIndex(t => t.id === task.id) : -1;
+  const hasNext = tasks && currentIndex < tasks.length - 1;
+  const hasPrev = tasks && currentIndex > 0;
 
   useEffect(() => {
     const loadTaskTags = async () => {
@@ -64,12 +73,10 @@ export function TaskDetailsDialog({
     const value = e.target.value;
     let deadline = value;
 
-    // If only date is selected (no time), add 23:59
     if (value && value.length === 10) {
       deadline = `${value}T23:59`;
     }
     
-    // Validate the date
     const date = parse(deadline, "yyyy-MM-dd'T'HH:mm", new Date());
     if (isValid(date)) {
       setFormData({ ...formData, deadline });
@@ -77,7 +84,6 @@ export function TaskDetailsDialog({
   };
 
   const handleSave = async () => {
-    // Ensure the deadline is in ISO format for consistency
     let deadline = formData.deadline;
     if (deadline) {
       const date = parse(deadline, "yyyy-MM-dd'T'HH:mm", new Date());
@@ -100,13 +106,54 @@ export function TaskDetailsDialog({
     }
   };
 
+  const handlePrevTask = () => {
+    if (tasks && currentIndex > 0) {
+      const prevTask = tasks[currentIndex - 1];
+      onTaskChange?.(prevTask);
+    }
+  };
+
+  const handleNextTask = () => {
+    if (tasks && currentIndex < tasks.length - 1) {
+      const nextTask = tasks[currentIndex + 1];
+      onTaskChange?.(nextTask);
+    }
+  };
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? 'Edit Task' : 'Task Details'}
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>
+              {isEditing ? 'Edit Task' : 'Task Details'}
+            </DialogTitle>
+            {tasks && tasks.length > 1 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handlePrevTask}
+                  disabled={!hasPrev}
+                  className="h-8 w-8"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  {currentIndex + 1} / {tasks.length}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleNextTask}
+                  disabled={!hasNext}
+                  className="h-8 w-8"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="space-y-4 py-4">

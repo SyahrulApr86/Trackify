@@ -1,41 +1,18 @@
-import React, { useState, useMemo } from 'react';
-import { DragDropContext, DropResult } from '@hello-pangea/dnd';
-import { Loader2, ArrowUpDown } from 'lucide-react';
+import React, { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
-import { Button } from './ui/button';
-import { TaskTable } from './TaskTable';
-import { CategoryView } from './CategoryView';
 import { ArchiveView } from './ArchiveView';
 import { BoardHeader } from './kanban/BoardHeader';
-import { BoardColumn } from './kanban/BoardColumn';
-import { TaskDetailsDialog } from './kanban/TaskDetailsDialog';
-import { TaskFilters } from './TaskFilters';
-import { TaskSearch } from './TaskSearch';
 import { DeadlineReminder } from './DeadlineReminder';
-import { TimeProgressBar } from './TimeProgressBar';
 import { Task, TaskStatus } from '@/types/task';
 import { useBoard } from '@/hooks/useBoard';
 import { useCategories } from '@/hooks/useCategories';
 import { useArchive } from '@/hooks/useArchive';
 import { useTags } from '@/hooks/useTags';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from './ui/alert-dialog';
-import { AddTaskDialog } from './kanban/AddTaskDialog';
+import { KanbanBoardHeader } from './kanban/KanbanBoardHeader';
+import { KanbanBoardContent } from './kanban/KanbanBoardContent';
+import { KanbanBoardSidebar } from './kanban/KanbanBoardSidebar';
+import { KanbanBoardDialogs } from './kanban/KanbanBoardDialogs';
 import { updateTask, deleteTask, archiveTask, unarchiveTask, createTask, updateTaskPosition, bulkUpdateTasks } from '@/lib/taskOperations';
 
 type SortField = 'deadline' | 'priority' | 'none';
@@ -53,6 +30,7 @@ export function KanbanBoard() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedDateTasks, setSelectedDateTasks] = useState<Task[] | null>(null);
   
   const [kanbanFilter, setKanbanFilter] = useState<string | 'all'>('all');
   const [kanbanTagFilter, setKanbanTagFilter] = useState<string | 'all'>('all');
@@ -69,6 +47,9 @@ export function KanbanBoard() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const loading = boardLoading || categoriesLoading || archiveLoading || tagsLoading;
+
+  // Get all tasks from the board
+  const allTasks = board?.columns.flatMap(column => column.tasks) || [];
 
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination || !board || !user) return;
@@ -87,7 +68,6 @@ export function KanbanBoard() {
     const task = sourceColumn.tasks.find(t => t.id === draggableId);
     if (!task) return;
 
-    // Immediately update the board state to reflect the change
     const newBoard = {
       ...board,
       columns: board.columns.map(col => {
@@ -115,11 +95,9 @@ export function KanbanBoard() {
       })
     };
 
-    // Update the state immediately
     setBoard(newBoard);
 
     try {
-      // Update the task's position in the database
       await updateTaskPosition(
         user.id,
         draggableId,
@@ -128,7 +106,6 @@ export function KanbanBoard() {
         destination.index
       );
 
-      // Update the order of other tasks in the destination column
       const destTasks = newBoard.columns.find(col => col.id === destination.droppableId)?.tasks || [];
       for (const [index, t] of destTasks.entries()) {
         if (t.id !== draggableId) {
@@ -137,7 +114,6 @@ export function KanbanBoard() {
       }
     } catch (error) {
       console.error('Error updating task position:', error);
-      // Revert the board state on error
       initializeBoard();
     }
   };
@@ -265,6 +241,27 @@ export function KanbanBoard() {
     setSelectedCategory(category);
   };
 
+  const handleDateClick = (date: Date) => {
+    const tasksForDate = allTasks.filter(task => {
+      if (!task.deadline) return false;
+      const taskDate = new Date(task.deadline);
+      return (
+        taskDate.getFullYear() === date.getFullYear() &&
+        taskDate.getMonth() === date.getMonth() &&
+        taskDate.getDate() === date.getDate()
+      );
+    });
+
+    if (tasksForDate.length > 0) {
+      setSelectedTask(tasksForDate[0]);
+      setSelectedDateTasks(tasksForDate);
+    }
+  };
+
+  const handleTaskChange = (task: Task) => {
+    setSelectedTask(task);
+  };
+
   const filterTasksBySearch = (tasks: Task[]) => {
     if (!searchQuery.trim()) return tasks;
     
@@ -347,14 +344,8 @@ export function KanbanBoard() {
     }
   };
 
-  const getAllTasks = () => {
-    if (!board) return [];
-    return board.columns.flatMap(column => column.tasks);
-  };
-
   const filteredBoard = getFilteredBoard();
   const filteredTasks = getFilteredTasks();
-  const allTasks = getAllTasks();
 
   if (loading) {
     return (
@@ -399,185 +390,84 @@ export function KanbanBoard() {
         />
       ) : (
         <>
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <TaskSearch
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Search task titles and descriptions..."
-              />
+          <KanbanBoardHeader
+            viewMode={viewMode}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            sortField={sortField}
+            onSortFieldChange={setSortField}
+            sortOrder={sortOrder}
+            onSortOrderChange={setSortOrder}
+            kanbanFilter={kanbanFilter}
+            onKanbanFilterChange={setKanbanFilter}
+            kanbanTagFilter={kanbanTagFilter}
+            onKanbanTagFilterChange={setKanbanTagFilter}
+            tableFilters={tableFilters}
+            onTableFiltersChange={setTableFilters}
+            categoryViewStatus={categoryViewStatus}
+            onCategoryViewStatusChange={setCategoryViewStatus}
+            categoryViewTag={categoryViewTag}
+            onCategoryViewTagChange={setCategoryViewTag}
+            categories={categories}
+            tags={tags}
+          />
 
-              <Select
-                value={sortField}
-                onValueChange={(value) => setSortField(value as SortField)}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Sort by..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Sorting</SelectItem>
-                  <SelectItem value="deadline">Deadline</SelectItem>
-                  <SelectItem value="priority">Priority</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {sortField !== 'none' && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setSortOrder(order => order === 'asc' ? 'desc' : 'asc')}
-                  className="h-10 w-10"
-                >
-                  <ArrowUpDown className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-
-            {viewMode === 'kanban' && (
-              <TaskFilters
-                selectedCategory={kanbanFilter}
-                selectedTag={kanbanTagFilter}
-                onCategoryChange={setKanbanFilter}
-                onTagChange={setKanbanTagFilter}
-                showStatusFilter={false}
-                categories={categories}
-                tags={tags}
-              />
-            )}
-            {viewMode === 'table' && (
-              <TaskFilters
-                selectedCategory={tableFilters.category}
-                selectedStatus={tableFilters.status}
-                selectedTag={tableFilters.tag}
-                onCategoryChange={(category) => setTableFilters(prev => ({ ...prev, category }))}
-                onStatusChange={(status) => setTableFilters(prev => ({ ...prev, status }))}
-                onTagChange={(tag) => setTableFilters(prev => ({ ...prev, tag }))}
-                showStatusFilter={true}
-                categories={categories}
-                tags={tags}
-              />
-            )}
-            {viewMode === 'categories' && (
-              <TaskFilters
-                selectedStatus={categoryViewStatus}
-                selectedTag={categoryViewTag}
-                onStatusChange={setCategoryViewStatus}
-                onTagChange={setCategoryViewTag}
-                showStatusFilter={true}
-                showCategoryFilter={false}
-                categories={categories}
-                tags={tags}
-              />
-            )}
-          </div>
-          
-          {viewMode === 'kanban' ? (
-            <div className="space-y-6">
-              <DragDropContext onDragEnd={handleDragEnd}>
-                <div className="grid grid-cols-3 gap-4">
-                  {filteredBoard.columns.map((column) => (
-                    <BoardColumn
-                      key={column.id}
-                      column={column}
-                      addingTaskToColumn={addingTaskToColumn}
-                      onAddTask={(columnId) => setAddingTaskToColumn(columnId)}
-                      onCancelAdd={() => {
-                        setAddingTaskToColumn(null);
-                        setSelectedCategory(null);
-                      }}
-                      onDeleteTask={setTaskToDelete}
-                      onTaskClick={setSelectedTask}
-                      categories={categories}
-                    />
-                  ))}
-                </div>
-              </DragDropContext>
-
-              <div className="mt-8 pt-8 border-t">
-                <TimeProgressBar />
-              </div>
-            </div>
-          ) : viewMode === 'categories' ? (
-            <div className="space-y-6">
-              <CategoryView
-                tasks={filteredTasks}
-                categories={categories}
+          <div className="grid grid-cols-12 gap-6">
+            <div className="col-span-12 lg:col-span-9">
+              <KanbanBoardContent
+                viewMode={viewMode}
+                filteredBoard={filteredBoard}
+                filteredTasks={filteredTasks}
+                addingTaskToColumn={addingTaskToColumn}
+                onAddTask={setAddingTaskToColumn}
+                onCancelAdd={() => {
+                  setAddingTaskToColumn(null);
+                  setSelectedCategory(null);
+                }}
                 onDeleteTask={setTaskToDelete}
                 onTaskClick={setSelectedTask}
-                onAddTask={handleAddTaskToCategory}
-                onCategoriesChange={setCategories}
-              />
-
-              <div className="mt-8 pt-8 border-t">
-                <TimeProgressBar />
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <TaskTable
-                tasks={filteredTasks}
-                onUpdateTask={handleUpdateTask}
-                onDeleteTask={handleDeleteTask}
-                onBulkUpdateTasks={handleBulkUpdateTasks}
                 categories={categories}
+                onUpdateTask={handleUpdateTask}
+                onBulkUpdateTasks={handleBulkUpdateTasks}
+                onAddTaskToCategory={handleAddTaskToCategory}
+                onCategoriesChange={setCategories}
+                onDragEnd={handleDragEnd}
               />
-
-              <div className="mt-8 pt-8 border-t">
-                <TimeProgressBar />
-              </div>
             </div>
-          )}
+
+            <div className="col-span-12 lg:col-span-3">
+              <KanbanBoardSidebar
+                tasks={allTasks}
+                onDateClick={handleDateClick}
+              />
+            </div>
+          </div>
         </>
       )}
 
-      <AlertDialog open={!!taskToDelete} onOpenChange={() => setTaskToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Task</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{taskToDelete?.title}"? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (taskToDelete) {
-                  handleDeleteTask(taskToDelete.id);
-                  setTaskToDelete(null);
-                }
-              }}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {addingTaskToColumn && (
-        <AddTaskDialog
-          columnId={addingTaskToColumn}
-          onAdd={handleAddTask}
-          onCancel={() => {
-            setAddingTaskToColumn(null);
-            setSelectedCategory(null);
-          }}
-          categories={categories}
-          defaultCategory={selectedCategory}
-          onCategoriesChange={loadCategories}
-        />
-      )}
-
-      {selectedTask && (
-        <TaskDetailsDialog
-          task={selectedTask}
-          onClose={() => setSelectedTask(null)}
-          onUpdate={handleUpdateTask}
-          onArchive={handleArchiveTask}
-          categories={categories}
-        />
-      )}
+      <KanbanBoardDialogs
+        taskToDelete={taskToDelete}
+        onCancelDelete={() => setTaskToDelete(null)}
+        onConfirmDelete={handleDeleteTask}
+        addingTaskToColumn={addingTaskToColumn}
+        selectedCategory={selectedCategory}
+        onAddTask={handleAddTask}
+        onCancelAdd={() => {
+          setAddingTaskToColumn(null);
+          setSelectedCategory(null);
+        }}
+        categories={categories}
+        onCategoriesChange={loadCategories}
+        selectedTask={selectedTask}
+        selectedDateTasks={selectedDateTasks}
+        onCloseTaskDetails={() => {
+          setSelectedTask(null);
+          setSelectedDateTasks(null);
+        }}
+        onUpdateTask={handleUpdateTask}
+        onArchiveTask={handleArchiveTask}
+        onTaskChange={handleTaskChange}
+      />
     </div>
   );
 }

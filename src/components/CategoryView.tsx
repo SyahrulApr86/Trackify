@@ -64,10 +64,8 @@ export function CategoryView({
       setIsLoading(true);
       setError(null);
 
-      // First restore user context
       await restoreUserContext(user.id);
       
-      // Then attempt to delete the category
       const { data, error } = await supabase
         .rpc('delete_category', { p_category_id: category.id });
 
@@ -78,10 +76,8 @@ export function CategoryView({
         return;
       }
 
-      // Restore context again before fetching updated categories
       await restoreUserContext(user.id);
 
-      // Fetch updated categories list
       const { data: updatedCategories, error: categoriesError } = await supabase
         .from('categories')
         .select('*')
@@ -105,19 +101,15 @@ export function CategoryView({
       setIsLoading(true);
       setError(null);
       
-      // First restore user context
       await restoreUserContext(user.id);
       
-      // Attempt to create/manage the category
       const { error: categoryError } = await supabase
         .rpc('manage_category', { p_name: newCategoryName.trim() });
 
       if (categoryError) throw categoryError;
 
-      // Restore context again before fetching updated categories
       await restoreUserContext(user.id);
 
-      // Fetch updated categories list
       const { data: updatedCategories, error: categoriesError } = await supabase
         .from('categories')
         .select('*')
@@ -136,6 +128,51 @@ export function CategoryView({
     }
   };
 
+  // Split categories into two arrays for two columns
+  const midpoint = Math.ceil(categories.length / 2);
+  const leftColumnCategories = categories.slice(0, midpoint);
+  const rightColumnCategories = categories.slice(midpoint);
+
+  const renderCategoryCard = (category: Category) => (
+    <div key={category.id} className="bg-card rounded-lg border shadow-sm">
+      <div className="p-4 border-b flex items-center justify-between">
+        <h3 className="font-semibold">{category.name}</h3>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">
+            {tasksByCategory[category.name]?.length || 0} tasks
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => setCategoryToDelete(category)}
+            disabled={tasksByCategory[category.name]?.length > 0 || isLoading}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      <div className="p-4 space-y-3">
+        {tasksByCategory[category.name]?.map((task) => (
+          <StaticTaskCard
+            key={task.id}
+            task={task}
+            onDelete={onDeleteTask}
+            onClick={onTaskClick}
+          />
+        ))}
+        <Button
+          onClick={() => onAddTask(category.name)}
+          variant="ghost"
+          className="w-full flex items-center gap-1 text-muted-foreground hover:text-foreground group"
+        >
+          <Plus size={16} className="transition-transform group-hover:scale-125" />
+          Add task
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -152,67 +189,38 @@ export function CategoryView({
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {categories.map(category => (
-          <div key={category.id} className="bg-card rounded-lg border shadow-sm">
-            <div className="p-4 border-b flex items-center justify-between">
-              <h3 className="font-semibold">{category.name}</h3>
-              <div className="flex items-center gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Left Column */}
+        <div className="space-y-6">
+          {leftColumnCategories.map(renderCategoryCard)}
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-6">
+          {rightColumnCategories.map(renderCategoryCard)}
+          
+          {/* Add uncategorized tasks card to the right column */}
+          {uncategorizedTasks.length > 0 && (
+            <div className="bg-card rounded-lg border shadow-sm">
+              <div className="p-4 border-b flex items-center justify-between">
+                <h3 className="font-semibold">Uncategorized</h3>
                 <span className="text-sm text-muted-foreground">
-                  {tasksByCategory[category.name]?.length || 0} tasks
+                  {uncategorizedTasks.length} tasks
                 </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => setCategoryToDelete(category)}
-                  disabled={tasksByCategory[category.name]?.length > 0 || isLoading}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+              </div>
+              <div className="p-4 space-y-3">
+                {uncategorizedTasks.map((task) => (
+                  <StaticTaskCard
+                    key={task.id}
+                    task={task}
+                    onDelete={onDeleteTask}
+                    onClick={onTaskClick}
+                  />
+                ))}
               </div>
             </div>
-            <div className="p-4 space-y-3">
-              {tasksByCategory[category.name]?.map((task) => (
-                <StaticTaskCard
-                  key={task.id}
-                  task={task}
-                  onDelete={onDeleteTask}
-                  onClick={onTaskClick}
-                />
-              ))}
-              <Button
-                onClick={() => onAddTask(category.name)}
-                variant="ghost"
-                className="w-full flex items-center gap-1 text-muted-foreground hover:text-foreground group"
-              >
-                <Plus size={16} className="transition-transform group-hover:scale-125" />
-                Add task
-              </Button>
-            </div>
-          </div>
-        ))}
-        
-        {uncategorizedTasks.length > 0 && (
-          <div className="bg-card rounded-lg border shadow-sm">
-            <div className="p-4 border-b flex items-center justify-between">
-              <h3 className="font-semibold">Uncategorized</h3>
-              <span className="text-sm text-muted-foreground">
-                {uncategorizedTasks.length} tasks
-              </span>
-            </div>
-            <div className="p-4 space-y-3">
-              {uncategorizedTasks.map((task) => (
-                <StaticTaskCard
-                  key={task.id}
-                  task={task}
-                  onDelete={onDeleteTask}
-                  onClick={onTaskClick}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <Dialog open={isCreatingCategory} onOpenChange={setIsCreatingCategory}>

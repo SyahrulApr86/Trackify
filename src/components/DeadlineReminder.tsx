@@ -141,23 +141,23 @@ export function DeadlineReminder({ tasks, categories = [], onTaskClick }: Deadli
         'Overdue Tasks',
         <AlertCircle className="w-5 h-5 text-destructive" />,
         "bg-destructive/10 border border-destructive/20 rounded-lg p-4",
-        "bg-destructive/5 hover:bg-destructive/10 border border-destructive/10"
+        "bg-destructive/5 hover:bg-destructive/20 border border-destructive/10"
       )}
-      
+
       {renderTaskGrid(
         todayTasks,
         'Due Today',
         <Clock className="w-5 h-5 text-yellow-600" />,
         "bg-yellow-100 border border-yellow-200 rounded-lg p-4",
-        "bg-yellow-50 hover:bg-yellow-100 border border-yellow-200"
+        "bg-yellow-50 hover:bg-yellow-200 border border-yellow-200"
       )}
-      
+
       {renderTaskGrid(
         upcomingTasks,
         'Upcoming Deadlines',
         <Clock className="w-5 h-5 text-blue-600" />,
         "bg-blue-100 border border-blue-200 rounded-lg p-4",
-        "bg-blue-50 hover:bg-blue-100 border border-blue-200"
+        "bg-blue-50 hover:bg-blue-200 border border-blue-200"
       )}
     </div>
   );

@@ -24,7 +24,7 @@ import {
 } from './ui/alert-dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { CategoryColorPicker } from './CategoryColorPicker';
 import { restoreUserContext } from '@/lib/auth';
 
 interface CategoryViewProps {
@@ -49,7 +49,7 @@ export function CategoryView({
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [categoryToEdit, setCategoryToEdit] = useState<Category | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryColor, setNewCategoryColor] = useState<CategoryColor>(availableColors[0]);
+  const [newCategoryColor, setNewCategoryColor] = useState<CategoryColor>('blue');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -106,7 +106,7 @@ export function CategoryView({
       
       await restoreUserContext(user.id);
       
-      const { data: category, error: categoryError } = await supabase
+      const { data: newCategory, error: categoryError } = await supabase
         .from('categories')
         .insert([{
           name: newCategoryName.trim(),
@@ -130,7 +130,7 @@ export function CategoryView({
       onCategoriesChange(updatedCategories || []);
 
       setNewCategoryName('');
-      setNewCategoryColor(availableColors[0]);
+      setNewCategoryColor('blue');
       setIsCreatingCategory(false);
     } catch (error: any) {
       setError(error.message);
@@ -180,67 +180,65 @@ export function CategoryView({
   const rightColumnCategories = categories.slice(midpoint);
 
   const renderCategoryCard = (category: Category) => {
-  const categoryColors = getCategoryColors(category.name, category.color);
-  
-  return (
-    <div key={category.id} className="bg-card rounded-lg border shadow-sm">
-      <div className="p-4 border-b flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className={`w-3 h-3 rounded-full ${categoryColors.bg} border ${categoryColors.text.replace('text', 'border')}`} />
-          <h3 className="font-semibold">{category.name}</h3>
+    const categoryColors = getCategoryColors(category.name, category.color);
+    
+    return (
+      <div key={category.id} className="bg-card rounded-lg border shadow-sm">
+        <div className="p-4 border-b flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className={`w-3 h-3 rounded-full ${categoryColors.bg} border ${categoryColors.text.replace('text', 'border')}`} />
+            <h3 className="font-semibold">{category.name}</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {tasksByCategory[category.name]?.length || 0} tasks
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 p-0"
+              onClick={() => {
+                setCategoryToEdit(category);
+                setNewCategoryColor((category.color || 'blue') as CategoryColor);
+              }}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setCategoryToDelete(category)}
+              disabled={tasksByCategory[category.name]?.length > 0 || isLoading}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
-            {tasksByCategory[category.name]?.length || 0} tasks
-          </span>
+        <div className="p-4 space-y-3">
+          {tasksByCategory[category.name]?.map((task) => (
+            <StaticTaskCard
+              key={task.id}
+              task={{
+                ...task,
+                categoryColor: category.color
+              }}
+              onDelete={onDeleteTask}
+              onClick={onTaskClick}
+            />
+          ))}
           <Button
+            onClick={() => onAddTask(category.name)}
             variant="ghost"
-            size="icon"
-            className="h-8 w-8 p-0"
-            onClick={() => {
-              setCategoryToEdit(category);
-              setNewCategoryColor((category.color || availableColors[0]) as CategoryColor);
-            }}
+            className="w-full flex items-center gap-1 text-muted-foreground hover:text-foreground group"
           >
-            <Settings className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
-            onClick={() => setCategoryToDelete(category)}
-            disabled={tasksByCategory[category.name]?.length > 0 || isLoading}
-          >
-            <Trash2 className="h-4 w-4" />
+            <Plus size={16} className="transition-transform group-hover:scale-125" />
+            Add task
           </Button>
         </div>
       </div>
-      <div className="p-4 space-y-3">
-        {tasksByCategory[category.name]?.map((task) => (
-          // Create a custom task object with the category color information
-          <StaticTaskCard
-            key={task.id}
-            task={{
-              ...task,
-              // Add the category color to the task object
-              categoryColor: category.color
-            }}
-            onDelete={onDeleteTask}
-            onClick={onTaskClick}
-          />
-        ))}
-        <Button
-          onClick={() => onAddTask(category.name)}
-          variant="ghost"
-          className="w-full flex items-center gap-1 text-muted-foreground hover:text-foreground group"
-        >
-          <Plus size={16} className="transition-transform group-hover:scale-125" />
-          Add task
-        </Button>
-      </div>
-    </div>
-  );
-};
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -314,28 +312,10 @@ export function CategoryView({
                 disabled={isLoading}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="categoryColor">Category Color</Label>
-              <Select
-                value={newCategoryColor}
-                onValueChange={(value) => setNewCategoryColor(value as CategoryColor)}
-                disabled={isLoading}
-              >
-                <SelectTrigger id="categoryColor">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableColors.map((color) => (
-                    <SelectItem key={color} value={color}>
-                      <div className="flex items-center gap-2">
-                        <div className={`w-4 h-4 rounded-full bg-${color}-100 border border-${color}-200`} />
-                        {color}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <CategoryColorPicker
+              value={newCategoryColor}
+              onChange={setNewCategoryColor}
+            />
           </div>
           <DialogFooter>
             <Button
@@ -371,28 +351,10 @@ export function CategoryView({
                 {error}
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="editCategoryColor">Color</Label>
-              <Select
-                value={newCategoryColor}
-                onValueChange={(value) => setNewCategoryColor(value as CategoryColor)}
-                disabled={isLoading}
-              >
-                <SelectTrigger id="editCategoryColor">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableColors.map((color) => (
-                    <SelectItem key={color} value={color}>
-                      <div className="flex items-center gap-2">
-                        <div className={`w-4 h-4 rounded-full bg-${color}-100 border border-${color}-200`} />
-                        {color}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <CategoryColorPicker
+              value={newCategoryColor}
+              onChange={setNewCategoryColor}
+            />
           </div>
           <DialogFooter>
             <Button

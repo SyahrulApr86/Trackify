@@ -86,4 +86,15 @@ export default {
     },
   },
   plugins: [require("tailwindcss-animate")],
+  safelist: [
+    // Add color variations for all available colors
+    ...['slate', 'gray', 'zinc', 'neutral', 'stone', 'red', 'orange', 'amber', 
+        'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 
+        'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose'].flatMap(color => [
+      `bg-${color}-100`,
+      `text-${color}-700`,
+      `border-${color}-700`,
+      `hover:bg-${color}-200`,
+    ])
+  ]
 }

@@ -6,7 +6,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Task, Category, Tag } from '@/types/task';
+import { Task, Category, Tag, getCategoryColors } from '@/types/task';
 import { TagInput } from '../TagInput';
 import { useAuthStore } from '@/store/authStore';
 import { getTaskTags } from '@/lib/tagOperations';
@@ -43,6 +43,12 @@ export function TaskDetailsDialog({
     priority: task.priority
   });
   const [loading, setLoading] = useState(true);
+
+  // Helper function to get category color from categories list
+  const getCategoryColorByName = (categoryName: string): string | undefined => {
+    const category = categories.find(c => c.name === categoryName);
+    return category?.color;
+  };
 
   // Find current task index in tasks array if provided
   const currentIndex = tasks ? tasks.findIndex(t => t.id === task.id) : -1;
@@ -267,13 +273,16 @@ export function TaskDetailsDialog({
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Category</Label>
                   <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                      ${task.category === 'Urgent' ? 'bg-red-100 text-red-700' :
-                        task.category === 'Work' ? 'bg-blue-100 text-blue-700' :
-                        task.category === 'Personal' ? 'bg-green-100 text-green-700' :
-                        'bg-gray-100 text-gray-700'}`}>
-                      {task.category}
-                    </span>
+                    {/* Get category colors using the helper function */}
+                    {(() => {
+                      const categoryColor = getCategoryColorByName(task.category);
+                      const categoryColors = getCategoryColors(task.category, categoryColor);
+                      return (
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${categoryColors.bg} ${categoryColors.text}`}>
+                          {task.category}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
               )}

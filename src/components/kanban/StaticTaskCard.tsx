@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Task, getCategoryColors } from '@/types/task';
 
 interface StaticTaskCardProps {
-  task: Task & { categoryColor?: string }; // Add categoryColor to the task props
+  task: Task & { categoryColor?: string };
   onDelete: (task: Task) => void;
   onClick: (task: Task) => void;
 }
@@ -27,7 +27,6 @@ function getPriorityStyles(priority: number) {
 }
 
 export function StaticTaskCard({ task, onDelete, onClick }: StaticTaskCardProps) {
-  // Use the categoryColor from the task object
   const categoryColors = getCategoryColors(task.category, task.categoryColor);
 
   return (

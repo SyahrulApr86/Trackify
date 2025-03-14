@@ -25,6 +25,18 @@ export function BoardColumn({
   onTaskClick,
   categories
 }: BoardColumnProps) {
+  // Helper function to get category color
+  const getCategoryColorByName = (categoryName: string): string | undefined => {
+    const category = categories.find(c => c.name === categoryName);
+    return category?.color;
+  };
+
+  // Add category colors to tasks
+  const tasksWithColors = column.tasks.map(task => ({
+    ...task,
+    categoryColor: getCategoryColorByName(task.category || '')
+  }));
+
   return (
     <div className="bg-card rounded-lg border shadow-sm h-full flex flex-col">
       <div className="p-4 border-b">
@@ -40,7 +52,7 @@ export function BoardColumn({
               snapshot.isDraggingOver ? 'bg-accent/50' : ''
             }`}
           >
-            {column.tasks.map((task, index) => (
+            {tasksWithColors.map((task, index) => (
               <TaskCard
                 key={task.id}
                 task={task}

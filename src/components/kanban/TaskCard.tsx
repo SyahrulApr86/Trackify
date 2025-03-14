@@ -5,7 +5,7 @@ import { Button } from '../ui/button';
 import { Task, Category, getCategoryColors } from '@/types/task';
 
 interface TaskCardProps {
-  task: Task;
+  task: Task & { categoryColor?: string }; // Updated to match StaticTaskCardProps
   index: number;
   onDelete: (task: Task) => void;
   onClick: (task: Task) => void;
@@ -30,7 +30,7 @@ function getPriorityStyles(priority: number) {
 
 export function TaskCard({ task, index, onDelete, onClick }: TaskCardProps) {
   const categoryColors = getCategoryColors(task.category, task.categoryColor);
-
+  
   return (
     <Draggable draggableId={task.id} index={index}>
       {(provided, snapshot) => (

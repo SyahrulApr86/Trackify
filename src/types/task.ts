@@ -17,7 +17,7 @@ export interface Task {
   deadline?: string;
   category_id?: string;
   category?: string;
-  categoryColor?: string; 
+  categoryColor?: string;
   status: TaskStatus;
   column_id: string;
   order: number;
@@ -78,22 +78,8 @@ export const availableColors = [
 
 export type CategoryColor = typeof availableColors[number];
 
-// Predefined category colors
-export const categoryColors: Record<string, { bg: string; text: string }> = {
-  Work: { bg: 'bg-blue-100', text: 'text-blue-700' },
-  Personal: { bg: 'bg-green-100', text: 'text-green-700' },
-  Urgent: { bg: 'bg-red-100', text: 'text-red-700' },
-  Study: { bg: 'bg-purple-100', text: 'text-purple-700' },
-  Shopping: { bg: 'bg-orange-100', text: 'text-orange-700' },
-  Health: { bg: 'bg-teal-100', text: 'text-teal-700' },
-  Finance: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  Travel: { bg: 'bg-indigo-100', text: 'text-indigo-700' },
-  Home: { bg: 'bg-amber-100', text: 'text-amber-700' },
-  default: { bg: 'bg-gray-100', text: 'text-gray-700' }
-};
-
 export function getCategoryColors(categoryName: string | undefined | null, customColor?: string): { bg: string; text: string } {
-  // If a custom color is provided, use it
+  // If a custom color is provided and it's valid, use it
   if (customColor && availableColors.includes(customColor as CategoryColor)) {
     return {
       bg: `bg-${customColor}-100`,
@@ -101,11 +87,9 @@ export function getCategoryColors(categoryName: string | undefined | null, custo
     };
   }
 
-  // If it's a predefined category, use its colors
-  if (categoryName && categoryName in categoryColors) {
-    return categoryColors[categoryName];
-  }
-
-  // Fallback to default
-  return categoryColors.default;
+  // Default color if no custom color is provided
+  return {
+    bg: 'bg-gray-100',
+    text: 'text-gray-700'
+  };
 }

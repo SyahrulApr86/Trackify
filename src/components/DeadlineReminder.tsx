@@ -1,15 +1,16 @@
 import React from 'react';
 import { AlertCircle, Clock, Flag } from 'lucide-react';
-import { Task } from '@/types/task';
+import { Task, Category } from '@/types/task';
 import { format, isPast, isToday, addDays } from 'date-fns';
 import { getCategoryColors } from '@/types/task';
 
 interface DeadlineReminderProps {
   tasks: Task[];
+  categories?: Category[]; // Add categories prop
   onTaskClick: (task: Task) => void;
 }
 
-export function DeadlineReminder({ tasks, onTaskClick }: DeadlineReminderProps) {
+export function DeadlineReminder({ tasks, categories = [], onTaskClick }: DeadlineReminderProps) {
   const incompleteTasks = tasks.filter(
     task => 
       task.deadline && 
@@ -34,6 +35,12 @@ export function DeadlineReminder({ tasks, onTaskClick }: DeadlineReminderProps) 
       return !isPast(deadline) && !isToday(deadline) && deadline <= addDays(new Date(), 7);
     }
   );
+
+  // Helper function to get category color from the categories list
+  const getCategoryColorByName = (categoryName: string): string | undefined => {
+    const category = categories.find(c => c.name === categoryName);
+    return category?.color;
+  };
 
   if (incompleteTasks.length === 0) return null;
 
@@ -82,7 +89,11 @@ export function DeadlineReminder({ tasks, onTaskClick }: DeadlineReminderProps) 
           {tasks.map(task => {
             if (processedTaskIds.has(task.id)) return null;
             processedTaskIds.add(task.id);
-            const categoryColors = getCategoryColors(task.category);
+            
+            // Get the category color from the categories list
+            const categoryColor = getCategoryColorByName(task.category || '');
+            const categoryColors = getCategoryColors(task.category, categoryColor);
+            
             return (
               <button
                 key={task.id}

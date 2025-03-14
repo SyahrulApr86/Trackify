@@ -73,6 +73,12 @@ export function TaskTable({
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Helper function to get category color from the categories list
+  const getCategoryColorByName = (categoryName: string): string | undefined => {
+    const category = categories.find(c => c.name === categoryName);
+    return category?.color;
+  };
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -250,7 +256,9 @@ export function TaskTable({
           </TableHeader>
           <TableBody>
             {sortedTasks.map(task => {
-              const categoryColors = getCategoryColors(task.category);
+              // Get the category color from the categories list
+              const categoryColor = getCategoryColorByName(task.category || '');
+              const categoryColors = getCategoryColors(task.category, categoryColor);
               
               return (
                 <TableRow key={task.id}>

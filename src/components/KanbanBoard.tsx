@@ -374,7 +374,11 @@ export function KanbanBoard() {
 
   return (
     <div className="space-y-6">
-      <DeadlineReminder tasks={allTasks} onTaskClick={setSelectedTask} />
+      <DeadlineReminder 
+        tasks={allTasks} 
+        categories={categories} 
+        onTaskClick={setSelectedTask} 
+      />
       
       <BoardHeader
         title={board.title}
@@ -385,6 +389,7 @@ export function KanbanBoard() {
       {viewMode === 'archive' ? (
         <ArchiveView
           tasks={archivedTasks}
+          categories={categories}
           onUnarchive={handleUnarchiveTask}
           onTaskClick={setSelectedTask}
         />

@@ -44,7 +44,7 @@ import {
   Flag
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { Task, TaskStatus, Category } from '../types/task';
+import { Task, TaskStatus, Category, getCategoryColors } from '../types/task';
 import { TagInput } from './TagInput';
 
 interface TaskTableProps {
@@ -249,180 +249,182 @@ export function TaskTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedTasks.map(task => (
-              <TableRow key={task.id}>
-                <TableCell>
-                  <Checkbox
-                    checked={selectedTasks.has(task.id)}
-                    onCheckedChange={() => handleSelectTask(task.id)}
-                  />
-                </TableCell>
-                <TableCell>
-                  {editingTask === task.id ? (
-                    <Input
-                      value={editValues.title}
-                      onChange={e => setEditValues({ ...editValues, title: e.target.value })}
-                      className="w-full"
+            {sortedTasks.map(task => {
+              const categoryColors = getCategoryColors(task.category);
+              
+              return (
+                <TableRow key={task.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedTasks.has(task.id)}
+                      onCheckedChange={() => handleSelectTask(task.id)}
                     />
-                  ) : (
-                    task.title
-                  )}
-                </TableCell>
-                <TableCell>
-                  {editingTask === task.id ? (
-                    <Input
-                      value={editValues.description}
-                      onChange={e => setEditValues({ ...editValues, description: e.target.value })}
-                      className="w-full"
-                    />
-                  ) : (
-                    task.description || '-'
-                  )}
-                </TableCell>
-                <TableCell>
-                  {editingTask === task.id ? (
-                    <Input
-                      type="datetime-local"
-                      value={editValues.deadline?.slice(0, 16) || ''}
-                      onChange={e => setEditValues({ ...editValues, deadline: e.target.value })}
-                      className="w-full"
-                    />
-                  ) : (
-                    task.deadline ? format(new Date(task.deadline), 'MMM d, yyyy HH:mm') : '-'
-                  )}
-                </TableCell>
-                <TableCell>
-                  {editingTask === task.id ? (
-                    <Select
-                      value={editValues.category}
-                      onValueChange={value => setEditValues({ ...editValues, category: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.name}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                      ${task.category === 'Urgent' ? 'bg-red-100 text-red-700' :
-                        task.category === 'Work' ? 'bg-blue-100 text-blue-700' :
-                        task.category === 'Personal' ? 'bg-green-100 text-green-700' :
-                        'bg-gray-100 text-gray-700'}`}>
-                      {task.category || '-'}
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {editingTask === task.id ? (
-                    <Select
-                      value={editValues.status}
-                      onValueChange={value => setEditValues({ ...editValues, status: value as TaskStatus })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="To Do">To Do</SelectItem>
-                        <SelectItem value="In Progress">In Progress</SelectItem>
-                        <SelectItem value="Done">Done</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                      ${task.status === 'Done' ? 'bg-green-100 text-green-700' :
-                        task.status === 'In Progress' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-gray-100 text-gray-700'}`}>
-                      {task.status}
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {editingTask === task.id ? (
-                    <Select
-                      value={editValues.priority?.toString()}
-                      onValueChange={value => setEditValues({ ...editValues, priority: parseInt(value) })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="99999">No Priority</SelectItem>
-                        {[1, 2, 3, 4, 5].map((p) => (
-                          <SelectItem key={p} value={p.toString()}>
-                            <div className="flex items-center gap-2">
-                              <Flag className="w-4 h-4" />
-                              Priority {p}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    task.priority < 99999 ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                        <Flag className="w-3 h-3" />
-                        P{task.priority}
-                      </span>
-                    ) : '-'
-                  )}
-                </TableCell>
-                <TableCell>
-                  {editingTask === task.id ? (
-                    <TagInput
-                      tags={editValues.tags || []}
-                      onTagsChange={(tags) => setEditValues({ ...editValues, tags })}
-                      placeholder="Add tags..."
-                    />
-                  ) : (
-                    <div className="flex flex-wrap gap-1">
-                      {task.tags?.map(tag => (
-                        <span
-                          key={tag.id}
-                          className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
-                        >
-                          {tag.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
+                  </TableCell>
+                  <TableCell>
                     {editingTask === task.id ? (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleSaveEdit(task.id)}
-                      >
-                        <Check className="w-4 h-4" />
-                      </Button>
+                      <Input
+                        value={editValues.title}
+                        onChange={e => setEditValues({ ...editValues, title: e.target.value })}
+                        className="w-full"
+                      />
                     ) : (
+                      task.title
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingTask === task.id ? (
+                      <Input
+                        value={editValues.description}
+                        onChange={e => setEditValues({ ...editValues, description: e.target.value })}
+                        className="w-full"
+                      />
+                    ) : (
+                      task.description || '-'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingTask === task.id ? (
+                      <Input
+                        type="datetime-local"
+                        value={editValues.deadline?.slice(0, 16) || ''}
+                        onChange={e => setEditValues({ ...editValues, deadline: e.target.value })}
+                        className="w-full"
+                      />
+                    ) : (
+                      task.deadline ? format(new Date(task.deadline), 'MMM d, yyyy HH:mm') : '-'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingTask === task.id ? (
+                      <Select
+                        value={editValues.category}
+                        onValueChange={value => setEditValues({ ...editValues, category: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.name}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      task.category ? (
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${categoryColors.bg} ${categoryColors.text}`}>
+                          {task.category}
+                        </span>
+                      ) : '-'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingTask === task.id ? (
+                      <Select
+                        value={editValues.status}
+                        onValueChange={value => setEditValues({ ...editValues, status: value as TaskStatus })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="To Do">To Do</SelectItem>
+                          <SelectItem value="In Progress">In Progress</SelectItem>
+                          <SelectItem value="Done">Done</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                        ${task.status === 'Done' ? 'bg-green-100 text-green-700' :
+                          task.status === 'In Progress' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-gray-100 text-gray-700'}`}>
+                        {task.status}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingTask === task.id ? (
+                      <Select
+                        value={editValues.priority?.toString()}
+                        onValueChange={value => setEditValues({ ...editValues, priority: parseInt(value) })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="99999">No Priority</SelectItem>
+                          {[1, 2, 3, 4, 5].map((p) => (
+                            <SelectItem key={p} value={p.toString()}>
+                              <div className="flex items-center gap-2">
+                                <Flag className="w-4 h-4" />
+                                Priority {p}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      task.priority < 99999 ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                          <Flag className="w-3 h-3" />
+                          P{task.priority}
+                        </span>
+                      ) : '-'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingTask === task.id ? (
+                      <TagInput
+                        tags={editValues.tags || []}
+                        onTagsChange={(tags) => setEditValues({ ...editValues, tags })}
+                        placeholder="Add tags..."
+                      />
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {task.tags?.map(tag => (
+                          <span
+                            key={tag.id}
+                            className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
+                          >
+                            {tag.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {editingTask === task.id ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleSaveEdit(task.id)}
+                        >
+                          <Check className="w-4 h-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(task)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleEdit(task)}
+                        onClick={() => setTaskToDelete(task)}
+                        className="hover:bg-destructive/10 hover:text-destructive"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setTaskToDelete(task)}
-                      className="hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

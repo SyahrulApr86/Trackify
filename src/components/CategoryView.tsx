@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Task, Category } from '@/types/task';
+import { Task, Category, availableColors, CategoryColor, getCategoryColors } from '@/types/task';
 import { StaticTaskCard } from './kanban/StaticTaskCard';
 import { Button } from './ui/button';
-import { Plus, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, AlertTriangle, Settings } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import {
@@ -24,6 +24,7 @@ import {
 } from './ui/alert-dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { restoreUserContext } from '@/lib/auth';
 
 interface CategoryViewProps {
@@ -43,12 +44,14 @@ export function CategoryView({
   onAddTask,
   onCategoriesChange
 }: CategoryViewProps) {
+  const { user } = useAuthStore();
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [categoryToEdit, setCategoryToEdit] = useState<Category | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState<CategoryColor>(availableColors[0]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { user } = useAuthStore();
   
   const tasksByCategory = categories.reduce((acc, category) => {
     acc[category.name] = tasks.filter(task => task.category === category.name);
@@ -103,8 +106,15 @@ export function CategoryView({
       
       await restoreUserContext(user.id);
       
-      const { error: categoryError } = await supabase
-        .rpc('manage_category', { p_name: newCategoryName.trim() });
+      const { data: category, error: categoryError } = await supabase
+        .from('categories')
+        .insert([{
+          name: newCategoryName.trim(),
+          user_id: user.id,
+          color: newCategoryColor
+        }])
+        .select()
+        .single();
 
       if (categoryError) throw categoryError;
 
@@ -120,7 +130,43 @@ export function CategoryView({
       onCategoriesChange(updatedCategories || []);
 
       setNewCategoryName('');
+      setNewCategoryColor(availableColors[0]);
       setIsCreatingCategory(false);
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateCategory = async () => {
+    if (!categoryToEdit || !user) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      await restoreUserContext(user.id);
+      
+      const { error: updateError } = await supabase
+        .from('categories')
+        .update({ color: newCategoryColor })
+        .eq('id', categoryToEdit.id);
+
+      if (updateError) throw updateError;
+
+      await restoreUserContext(user.id);
+
+      const { data: updatedCategories, error: categoriesError } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name');
+
+      if (categoriesError) throw categoriesError;
+      onCategoriesChange(updatedCategories || []);
+
+      setCategoryToEdit(null);
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -133,14 +179,31 @@ export function CategoryView({
   const leftColumnCategories = categories.slice(0, midpoint);
   const rightColumnCategories = categories.slice(midpoint);
 
-  const renderCategoryCard = (category: Category) => (
+  const renderCategoryCard = (category: Category) => {
+  const categoryColors = getCategoryColors(category.name, category.color);
+  
+  return (
     <div key={category.id} className="bg-card rounded-lg border shadow-sm">
       <div className="p-4 border-b flex items-center justify-between">
-        <h3 className="font-semibold">{category.name}</h3>
+        <div className="flex items-center gap-2">
+          <div className={`w-3 h-3 rounded-full ${categoryColors.bg} border ${categoryColors.text.replace('text', 'border')}`} />
+          <h3 className="font-semibold">{category.name}</h3>
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">
             {tasksByCategory[category.name]?.length || 0} tasks
           </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 p-0"
+            onClick={() => {
+              setCategoryToEdit(category);
+              setNewCategoryColor((category.color || availableColors[0]) as CategoryColor);
+            }}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -154,9 +217,14 @@ export function CategoryView({
       </div>
       <div className="p-4 space-y-3">
         {tasksByCategory[category.name]?.map((task) => (
+          // Create a custom task object with the category color information
           <StaticTaskCard
             key={task.id}
-            task={task}
+            task={{
+              ...task,
+              // Add the category color to the task object
+              categoryColor: category.color
+            }}
             onDelete={onDeleteTask}
             onClick={onTaskClick}
           />
@@ -172,6 +240,7 @@ export function CategoryView({
       </div>
     </div>
   );
+};
 
   return (
     <div className="space-y-6">
@@ -223,6 +292,7 @@ export function CategoryView({
         </div>
       </div>
 
+      {/* Create Category Dialog */}
       <Dialog open={isCreatingCategory} onOpenChange={setIsCreatingCategory}>
         <DialogContent>
           <DialogHeader>
@@ -243,6 +313,28 @@ export function CategoryView({
                 placeholder="Enter category name..."
                 disabled={isLoading}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="categoryColor">Category Color</Label>
+              <Select
+                value={newCategoryColor}
+                onValueChange={(value) => setNewCategoryColor(value as CategoryColor)}
+                disabled={isLoading}
+              >
+                <SelectTrigger id="categoryColor">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableColors.map((color) => (
+                    <SelectItem key={color} value={color}>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-4 h-4 rounded-full bg-${color}-100 border border-${color}-200`} />
+                        {color}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
@@ -267,6 +359,60 @@ export function CategoryView({
         </DialogContent>
       </Dialog>
 
+      {/* Edit Category Dialog */}
+      <Dialog open={!!categoryToEdit} onOpenChange={(open) => !open && setCategoryToEdit(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Category Color</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {error && (
+              <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+                {error}
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="editCategoryColor">Color</Label>
+              <Select
+                value={newCategoryColor}
+                onValueChange={(value) => setNewCategoryColor(value as CategoryColor)}
+                disabled={isLoading}
+              >
+                <SelectTrigger id="editCategoryColor">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableColors.map((color) => (
+                    <SelectItem key={color} value={color}>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-4 h-4 rounded-full bg-${color}-100 border border-${color}-200`} />
+                        {color}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCategoryToEdit(null)}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateCategory}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Category Dialog */}
       <AlertDialog open={!!categoryToDelete} onOpenChange={(open) => !open && setCategoryToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

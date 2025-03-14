@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertCircle, Clock, Flag } from 'lucide-react';
 import { Task } from '@/types/task';
 import { format, isPast, isToday, addDays } from 'date-fns';
+import { getCategoryColors } from '@/types/task';
 
 interface DeadlineReminderProps {
   tasks: Task[];
@@ -81,6 +82,7 @@ export function DeadlineReminder({ tasks, onTaskClick }: DeadlineReminderProps) 
           {tasks.map(task => {
             if (processedTaskIds.has(task.id)) return null;
             processedTaskIds.add(task.id);
+            const categoryColors = getCategoryColors(task.category);
             return (
               <button
                 key={task.id}
@@ -102,9 +104,16 @@ export function DeadlineReminder({ tasks, onTaskClick }: DeadlineReminderProps) 
                       {task.status}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Due {format(new Date(task.deadline), 'MMM d, yyyy HH:mm')}
-                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {task.category && (
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${categoryColors.bg} ${categoryColors.text}`}>
+                        {task.category}
+                      </span>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      Due {format(new Date(task.deadline), 'MMM d, yyyy HH:mm')}
+                    </p>
+                  </div>
                 </div>
               </button>
             );
@@ -121,7 +130,7 @@ export function DeadlineReminder({ tasks, onTaskClick }: DeadlineReminderProps) 
         'Overdue Tasks',
         <AlertCircle className="w-5 h-5 text-destructive" />,
         "bg-destructive/10 border border-destructive/20 rounded-lg p-4",
-        "bg-destructive/5 hover:bg-destructive/20 border border-destructive/10"
+        "bg-destructive/5 hover:bg-destructive/10 border border-destructive/10"
       )}
       
       {renderTaskGrid(
@@ -129,7 +138,7 @@ export function DeadlineReminder({ tasks, onTaskClick }: DeadlineReminderProps) 
         'Due Today',
         <Clock className="w-5 h-5 text-yellow-600" />,
         "bg-yellow-100 border border-yellow-200 rounded-lg p-4",
-        "bg-yellow-50 hover:bg-yellow-200 border border-yellow-200"
+        "bg-yellow-50 hover:bg-yellow-100 border border-yellow-200"
       )}
       
       {renderTaskGrid(
@@ -137,7 +146,7 @@ export function DeadlineReminder({ tasks, onTaskClick }: DeadlineReminderProps) 
         'Upcoming Deadlines',
         <Clock className="w-5 h-5 text-blue-600" />,
         "bg-blue-100 border border-blue-200 rounded-lg p-4",
-        "bg-blue-50 hover:bg-blue-200 border border-blue-200"
+        "bg-blue-50 hover:bg-blue-100 border border-blue-200"
       )}
     </div>
   );

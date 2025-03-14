@@ -2,7 +2,7 @@ import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { GripVertical, Trash2, Flag } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Task } from '@/types/task';
+import { Task, Category, getCategoryColors } from '@/types/task';
 
 interface TaskCardProps {
   task: Task;
@@ -29,6 +29,8 @@ function getPriorityStyles(priority: number) {
 }
 
 export function TaskCard({ task, index, onDelete, onClick }: TaskCardProps) {
+  const categoryColors = getCategoryColors(task.category, task.categoryColor);
+
   return (
     <Draggable draggableId={task.id} index={index}>
       {(provided, snapshot) => (
@@ -78,11 +80,7 @@ export function TaskCard({ task, index, onDelete, onClick }: TaskCardProps) {
               )}
               <div className="flex flex-wrap gap-2 mt-2">
                 {task.category && (
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                    ${task.category === 'Urgent' ? 'bg-red-100 text-red-700' :
-                      task.category === 'Work' ? 'bg-blue-100 text-blue-700' :
-                      task.category === 'Personal' ? 'bg-green-100 text-green-700' :
-                      'bg-gray-100 text-gray-700'}`}>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${categoryColors.bg} ${categoryColors.text}`}>
                     {task.category}
                   </span>
                 )}

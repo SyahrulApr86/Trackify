@@ -5,7 +5,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Task, Category } from '@/types/task';
+import { Task, Category, availableColors, CategoryColor } from '@/types/task';
 import { TagInput } from '../TagInput';
 import { format, parse, isValid } from 'date-fns';
 
@@ -37,6 +37,7 @@ export function AddTaskDialog({
     deadline: defaultDeadline,
     category: defaultCategory || '',
     newCategory: '',
+    newCategoryColor: availableColors[0],
     tags: [] as string[],
     priority: 99999
   });
@@ -76,6 +77,7 @@ export function AddTaskDialog({
       description: taskForm.description || null,
       deadline: deadline,
       category: category || null,
+      categoryColor: customCategory ? taskForm.newCategoryColor : undefined,
       tags: taskForm.tags,
       priority: taskForm.priority
     });
@@ -186,19 +188,42 @@ export function AddTaskDialog({
                 </Button>
               </div>
             ) : (
-              <div className="flex gap-2">
-                <Input
-                  value={taskForm.newCategory}
-                  onChange={(e) => setTaskForm({ ...taskForm, newCategory: e.target.value })}
-                  placeholder="New category..."
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setCustomCategory(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    value={taskForm.newCategory}
+                    onChange={(e) => setTaskForm({ ...taskForm, newCategory: e.target.value })}
+                    placeholder="New category..."
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setCustomCategory(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <Label htmlFor="categoryColor" className="shrink-0">Color:</Label>
+                  <Select
+                    value={taskForm.newCategoryColor}
+                    onValueChange={(value) => setTaskForm({ ...taskForm, newCategoryColor: value as CategoryColor })}
+                  >
+                    <SelectTrigger id="categoryColor">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableColors.map((color) => (
+                        <SelectItem key={color} value={color}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-4 h-4 rounded-full bg-${color}-100 border border-${color}-200`} />
+                            {color}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             )}
           </div>

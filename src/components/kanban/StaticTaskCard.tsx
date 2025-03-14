@@ -1,10 +1,10 @@
 import React from 'react';
 import { Trash2, Flag } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Task } from '@/types/task';
+import { Task, getCategoryColors } from '@/types/task';
 
 interface StaticTaskCardProps {
-  task: Task;
+  task: Task & { categoryColor?: string }; // Add categoryColor to the task props
   onDelete: (task: Task) => void;
   onClick: (task: Task) => void;
 }
@@ -27,6 +27,9 @@ function getPriorityStyles(priority: number) {
 }
 
 export function StaticTaskCard({ task, onDelete, onClick }: StaticTaskCardProps) {
+  // Use the categoryColor from the task object
+  const categoryColors = getCategoryColors(task.category, task.categoryColor);
+
   return (
     <div
       className="bg-background border rounded-lg p-3 shadow-sm group kanban-task cursor-pointer hover:shadow-md"
@@ -63,11 +66,7 @@ export function StaticTaskCard({ task, onDelete, onClick }: StaticTaskCardProps)
           )}
           <div className="flex flex-wrap gap-2 mt-2">
             {task.category && (
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                ${task.category === 'Urgent' ? 'bg-red-100 text-red-700' :
-                  task.category === 'Work' ? 'bg-blue-100 text-blue-700' :
-                  task.category === 'Personal' ? 'bg-green-100 text-green-700' :
-                  'bg-gray-100 text-gray-700'}`}>
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${categoryColors.bg} ${categoryColors.text}`}>
                 {task.category}
               </span>
             )}

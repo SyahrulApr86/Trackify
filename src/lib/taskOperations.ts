@@ -1,6 +1,37 @@
 import { supabase } from './supabase';
 import { Task } from '@/types/task';
 import { restoreUserContext } from './auth';
+import { addDays, isPast } from 'date-fns';
+
+// Function to check if a task should be archived
+async function checkAndArchiveTasks(userId: string) {
+  try {
+    await restoreUserContext(userId);
+
+    const sevenDaysAgo = addDays(new Date(), -7);
+
+    // Get completed tasks that are older than 7 days and not archived
+    const { data: tasksToArchive, error: fetchError } = await supabase
+      .from('tasks')
+      .select('id')
+      .eq('status', 'Done')
+      .lt('completed_at', sevenDaysAgo.toISOString())
+      .is('archived_at', null);
+
+    if (fetchError) throw fetchError;
+
+    if (tasksToArchive && tasksToArchive.length > 0) {
+      const { error: updateError } = await supabase
+        .from('tasks')
+        .update({ archived_at: new Date().toISOString() })
+        .in('id', tasksToArchive.map(t => t.id));
+
+      if (updateError) throw updateError;
+    }
+  } catch (error) {
+    console.error('Error checking and archiving tasks:', error);
+  }
+}
 
 export async function updateTask(
   userId: string,
@@ -83,6 +114,13 @@ export async function updateTask(
       }
     }
 
+    // Set completed_at when status changes to Done
+    if (updates.status === 'Done') {
+      updates.completed_at = new Date().toISOString();
+    } else if (updates.status && updates.status !== 'Done') {
+      updates.completed_at = null;
+    }
+
     // Restore context before final update
     await restoreUserContext(userId);
 
@@ -112,6 +150,9 @@ export async function updateTask(
       .single();
 
     if (error) throw error;
+
+    // Check for tasks that need to be archived
+    await checkAndArchiveTasks(userId);
 
     return {
       ...updatedTask,
@@ -143,7 +184,14 @@ export async function deleteTask(userId: string, taskId: string) {
 export async function archiveTask(userId: string, taskId: string) {
   try {
     await restoreUserContext(userId);
-    await supabase.rpc('archive_task', { task_id: taskId });
+    
+    const { error } = await supabase
+      .from('tasks')
+      .update({ archived_at: new Date().toISOString() })
+      .eq('id', taskId)
+      .is('archived_at', null);
+
+    if (error) throw error;
   } catch (error) {
     console.error('Error archiving task:', error);
     throw error;
@@ -153,7 +201,13 @@ export async function archiveTask(userId: string, taskId: string) {
 export async function unarchiveTask(userId: string, taskId: string) {
   try {
     await restoreUserContext(userId);
-    await supabase.rpc('unarchive_task', { task_id: taskId });
+    
+    const { error } = await supabase
+      .from('tasks')
+      .update({ archived_at: null })
+      .eq('id', taskId);
+
+    if (error) throw error;
   } catch (error) {
     console.error('Error unarchiving task:', error);
     throw error;
@@ -313,6 +367,9 @@ export async function updateTaskPosition(
       .eq('id', taskId);
 
     if (error) throw error;
+
+    // Check for tasks that need to be archived after status update
+    await checkAndArchiveTasks(userId);
   } catch (error) {
     console.error('Error updating task position:', error);
     throw error;
@@ -354,6 +411,13 @@ export async function bulkUpdateTasks(
       }
     }
 
+    // Set completed_at when status changes to Done
+    if (updates.status === 'Done') {
+      updates.completed_at = new Date().toISOString();
+    } else if (updates.status && updates.status !== 'Done') {
+      updates.completed_at = null;
+    }
+
     const taskUpdates = {
       ...updates,
       category_id: categoryId
@@ -367,6 +431,9 @@ export async function bulkUpdateTasks(
       .in('id', taskIds);
 
     if (error) throw error;
+
+    // Check for tasks that need to be archived
+    await checkAndArchiveTasks(userId);
   } catch (error) {
     console.error('Error updating tasks:', error);
     throw error;

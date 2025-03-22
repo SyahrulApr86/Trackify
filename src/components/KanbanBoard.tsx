@@ -55,14 +55,14 @@ export function KanbanBoard() {
     if (!result.destination || !board || !user) return;
 
     const { source, destination, draggableId } = result;
-    
+
     if (source.droppableId === destination.droppableId && source.index === destination.index) {
       return;
     }
 
     const sourceColumn = board.columns.find(col => col.id === source.droppableId);
     const destColumn = board.columns.find(col => col.id === destination.droppableId);
-    
+
     if (!sourceColumn || !destColumn) return;
 
     const task = sourceColumn.tasks.find(t => t.id === draggableId);
@@ -71,6 +71,22 @@ export function KanbanBoard() {
     const newBoard = {
       ...board,
       columns: board.columns.map(col => {
+        // Special case: reordering within the same column
+        if (source.droppableId === destination.droppableId && col.id === source.droppableId) {
+          const columnTasks = [...col.tasks];
+          const [movedTask] = columnTasks.splice(source.index, 1);
+          columnTasks.splice(destination.index, 0, {
+            ...movedTask,
+            order: destination.index
+          });
+
+          return {
+            ...col,
+            tasks: columnTasks.map((t, index) => ({ ...t, order: index }))
+          };
+        }
+
+        // Moving between different columns
         if (col.id === source.droppableId) {
           return {
             ...col,
@@ -99,11 +115,11 @@ export function KanbanBoard() {
 
     try {
       await updateTaskPosition(
-        user.id,
-        draggableId,
-        destination.droppableId,
-        destColumn.title,
-        destination.index
+          user.id,
+          draggableId,
+          destination.droppableId,
+          destColumn.title,
+          destination.index
       );
 
       const destTasks = newBoard.columns.find(col => col.id === destination.droppableId)?.tasks || [];

@@ -1,7 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Plus } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Input } from './ui/input';
-import { Button } from './ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 
 interface TagInputProps {
   tags: string[];
@@ -14,51 +20,15 @@ export function TagInput({
   tags,
   onTagsChange,
   suggestions = [],
-  placeholder = "Add tags..."
+  placeholder = "Select tags..."
 }: TagInputProps) {
-  const [input, setInput] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const suggestionsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const filteredSuggestions = suggestions.filter(
-    suggestion => 
-      !tags.includes(suggestion) &&
-      suggestion.toLowerCase().includes(input.toLowerCase())
-  );
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value);
-    setShowSuggestions(true);
-  };
-
-  const handleInputKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && input.trim()) {
-      e.preventDefault();
-      addTag(input.trim());
-    } else if (e.key === 'Backspace' && !input && tags.length > 0) {
-      removeTag(tags[tags.length - 1]);
-    }
-  };
+  // Filter out already selected tags from suggestions
+  const availableTags = suggestions.filter(tag => !tags.includes(tag));
 
   const addTag = (tag: string) => {
-    const normalizedTag = tag.trim().toLowerCase();
-    if (normalizedTag && !tags.includes(normalizedTag)) {
-      onTagsChange([...tags, normalizedTag]);
+    if (!tags.includes(tag)) {
+      onTagsChange([...tags, tag]);
     }
-    setInput('');
-    setShowSuggestions(false);
   };
 
   const removeTag = (tagToRemove: string) => {
@@ -85,47 +55,23 @@ export function TagInput({
         ))}
       </div>
       
-      <div className="relative">
-        <div className="flex gap-2">
-          <Input
-            ref={inputRef}
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleInputKeyDown}
-            onFocus={() => setShowSuggestions(true)}
-            placeholder={placeholder}
-            className="flex-1"
-          />
-          {input.trim() && (
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              onClick={() => addTag(input)}
-              className="shrink-0"
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-
-        {showSuggestions && filteredSuggestions.length > 0 && (
-          <div
-            ref={suggestionsRef}
-            className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md"
-          >
-            {filteredSuggestions.map(suggestion => (
-              <button
-                key={suggestion}
-                className="w-full px-4 py-2 text-left hover:bg-accent text-sm"
-                onClick={() => addTag(suggestion)}
-              >
-                {suggestion}
-              </button>
+      {availableTags.length > 0 && (
+        <Select
+          onValueChange={addTag}
+          value={undefined} // Always show placeholder
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            {availableTags.map(tag => (
+              <SelectItem key={tag} value={tag}>
+                {tag}
+              </SelectItem>
             ))}
-          </div>
-        )}
-      </div>
+          </SelectContent>
+        </Select>
+      )}
     </div>
   );
 }

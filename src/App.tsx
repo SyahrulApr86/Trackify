@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from './store/authStore';
-import { Loader2, LogOut, AlertCircle, X, ArrowLeft, Kanban, BookText, Clock } from 'lucide-react';
+import { Loader2, LogOut, AlertCircle, X, ArrowLeft, Kanban, BookText, Clock, Tag } from 'lucide-react';
 import { KanbanBoard } from './components/KanbanBoard';
 import { DailyNotes } from './components/DailyNotes';
 import { TimeProgressBar } from './components/TimeProgressBar';
+import { TagManagement } from './components/TagManagement';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
@@ -15,7 +16,7 @@ function App() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
-  const [view, setView] = useState<'tasks' | 'notes' | 'progress'>('tasks');
+  const [view, setView] = useState<'tasks' | 'notes' | 'progress' | 'tags'>('tasks');
   const { signIn, signUp, signOut, user, loading, error, clearError } = useAuthStore();
 
   // Restore user context when the app loads with a persisted user
@@ -213,6 +214,15 @@ function App() {
               Progress
             </Button>
             <Button
+              variant={view === 'tags' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setView('tags')}
+              className="flex items-center gap-2"
+            >
+              <Tag className="w-4 h-4" />
+              Tags
+            </Button>
+            <Button
               variant="ghost"
               size="sm"
               onClick={signOut}
@@ -229,6 +239,8 @@ function App() {
           <KanbanBoard />
         ) : view === 'notes' ? (
           <DailyNotes />
+        ) : view === 'tags' ? (
+          <TagManagement />
         ) : (
           <TimeProgressBar />
         )}

@@ -12,28 +12,28 @@ interface DeadlineReminderProps {
 
 export function DeadlineReminder({ tasks, categories = [], onTaskClick }: DeadlineReminderProps) {
   const incompleteTasks = tasks.filter(
-    task => 
-      task.deadline && 
-      (task.status === 'To Do' || task.status === 'In Progress') &&
-      !task.archived_at
+      task =>
+          task.deadline &&
+          (task.status === 'To Do' || task.status === 'In Progress') &&
+          !task.archived_at
   );
 
   const overdueTasks = incompleteTasks.filter(
-    task => isPast(new Date(task.deadline))
+      task => isPast(new Date(task.deadline))
   );
 
   const todayTasks = incompleteTasks.filter(
-    task => {
-      const deadline = new Date(task.deadline);
-      return isToday(deadline) && !isPast(deadline);
-    }
+      task => {
+        const deadline = new Date(task.deadline);
+        return isToday(deadline) && !isPast(deadline);
+      }
   );
 
   const upcomingTasks = incompleteTasks.filter(
-    task => {
-      const deadline = new Date(task.deadline);
-      return !isPast(deadline) && !isToday(deadline) && deadline <= addDays(new Date(), 7);
-    }
+      task => {
+        const deadline = new Date(task.deadline);
+        return !isPast(deadline) && !isToday(deadline) && deadline <= addDays(new Date(), 7);
+      }
   );
 
   // Helper function to get category color from the categories list
@@ -79,86 +79,86 @@ export function DeadlineReminder({ tasks, categories = [], onTaskClick }: Deadli
     if (tasks.length === 0) return null;
 
     return (
-      <div className={containerClass}>
-        <div className="flex items-center gap-2 mb-3">
-          {icon}
-          <h3 className="font-semibold">{title}</h3>
-          <span className="text-sm text-muted-foreground">({tasks.length})</span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-          {tasks.map(task => {
-            if (processedTaskIds.has(task.id)) return null;
-            processedTaskIds.add(task.id);
-            
-            // Get the category color from the categories list
-            const categoryColor = getCategoryColorByName(task.category || '');
-            const categoryColors = getCategoryColors(task.category, categoryColor);
-            
-            return (
-              <button
-                key={task.id}
-                onClick={() => onTaskClick(task)}
-                className={`text-left rounded-md p-3 transition-colors ${cardClass}`}
-              >
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                      <p className="font-medium line-clamp-1">{task.title}</p>
-                      {task.priority < 99999 && (
-                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${getPriorityStyles(task.priority)}`}>
+        <div className={containerClass}>
+          <div className="flex items-center gap-2 mb-3">
+            {icon}
+            <h3 className="font-semibold">{title}</h3>
+            <span className="text-sm text-muted-foreground">({tasks.length})</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {tasks.map(task => {
+              if (processedTaskIds.has(task.id)) return null;
+              processedTaskIds.add(task.id);
+
+              // Get the category color from the categories list
+              const categoryColor = getCategoryColorByName(task.category || '');
+              const categoryColors = getCategoryColors(task.category, categoryColor);
+
+              return (
+                  <button
+                      key={task.id}
+                      onClick={() => onTaskClick(task)}
+                      className={`text-left rounded-md p-3 transition-colors ${cardClass}`}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                          <p className="font-medium line-clamp-1">{task.title}</p>
+                          {task.priority < 99999 && (
+                              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${getPriorityStyles(task.priority)}`}>
                           <Flag className="w-3 h-3" />
                           P{task.priority}
                         </span>
-                      )}
-                    </div>
-                    <span className={`shrink-0 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClasses(task.status)}`}>
+                          )}
+                        </div>
+                        <span className={`shrink-0 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClasses(task.status)}`}>
                       {task.status}
                     </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {task.category && (
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${categoryColors.bg} ${categoryColors.text}`}>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {task.category && (
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${categoryColors.bg} ${categoryColors.text}`}>
                         {task.category}
                       </span>
-                    )}
-                    <p className="text-sm text-muted-foreground">
-                      Due {format(new Date(task.deadline), 'MMM d, yyyy HH:mm')}
-                    </p>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
+                        )}
+                        <p className="text-sm text-muted-foreground">
+                          Due {format(new Date(task.deadline), 'MMM d, yyyy HH:mm')}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
     );
   };
 
   return (
-    <div className="space-y-6">
-      {renderTaskGrid(
-        overdueTasks,
-        'Overdue Tasks',
-        <AlertCircle className="w-5 h-5 text-destructive" />,
-        "bg-destructive/10 border border-destructive/20 rounded-lg p-4",
-        "bg-destructive/5 hover:bg-destructive/20 border border-destructive/10"
-      )}
+      <div className="space-y-6">
+        {renderTaskGrid(
+            overdueTasks,
+            'Overdue Tasks',
+            <AlertCircle className="w-5 h-5 text-destructive" />,
+            "bg-red-200 border border-red-300 rounded-lg p-4",
+            "bg-red-100 hover:bg-red-300 border border-red-200"
+        )}
 
-      {renderTaskGrid(
-        todayTasks,
-        'Due Today',
-        <Clock className="w-5 h-5 text-yellow-600" />,
-        "bg-yellow-100 border border-yellow-200 rounded-lg p-4",
-        "bg-yellow-50 hover:bg-yellow-200 border border-yellow-200"
-      )}
+        {renderTaskGrid(
+            todayTasks,
+            'Due Today',
+            <Clock className="w-5 h-5 text-yellow-600" />,
+            "bg-yellow-100 border border-yellow-200 rounded-lg p-4",
+            "bg-yellow-50 hover:bg-yellow-200 border border-yellow-200"
+        )}
 
-      {renderTaskGrid(
-        upcomingTasks,
-        'Upcoming Deadlines',
-        <Clock className="w-5 h-5 text-blue-600" />,
-        "bg-blue-100 border border-blue-200 rounded-lg p-4",
-        "bg-blue-50 hover:bg-blue-200 border border-blue-200"
-      )}
-    </div>
+        {renderTaskGrid(
+            upcomingTasks,
+            'Upcoming Deadlines',
+            <Clock className="w-5 h-5 text-blue-600" />,
+            "bg-blue-100 border border-blue-200 rounded-lg p-4",
+            "bg-blue-50 hover:bg-blue-200 border border-blue-200"
+        )}
+      </div>
   );
 }

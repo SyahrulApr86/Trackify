@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Task, Category, availableColors, CategoryColor } from '@/types/task';
 import { TagInput } from '../TagInput';
 import { format, parse, isValid } from 'date-fns';
+import { useTags } from '@/hooks/useTags';
+import { useAuthStore } from '@/store/authStore';
 
 interface AddTaskDialogProps {
   columnId: string;
@@ -26,6 +28,9 @@ export function AddTaskDialog({
   defaultCategory,
   onCategoriesChange
 }: AddTaskDialogProps) {
+  const { user } = useAuthStore();
+  const { tags: allTags } = useTags(user?.id);
+  
   // Get today's date at 23:59
   const today = new Date();
   today.setHours(23, 59, 0, 0);
@@ -232,6 +237,7 @@ export function AddTaskDialog({
             <TagInput
               tags={taskForm.tags}
               onTagsChange={(tags) => setTaskForm({ ...taskForm, tags })}
+              suggestions={allTags.map(tag => tag.name)}
               placeholder="Add tags..."
             />
           </div>

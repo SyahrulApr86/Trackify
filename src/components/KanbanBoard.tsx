@@ -22,7 +22,7 @@ export function KanbanBoard() {
   const { user } = useAuthStore();
   const { board, setBoard, loading: boardLoading, error: boardError, initializeBoard } = useBoard(user?.id);
   const { categories, setCategories, loading: categoriesLoading, loadCategories } = useCategories(user?.id);
-  const { archivedTasks, loading: archiveLoading, loadArchivedTasks } = useArchive(user?.id);
+  const { archivedTasks, setArchivedTasks, loading: archiveLoading } = useArchive(user?.id);
   const { tags, loading: tagsLoading } = useTags(user?.id);
 
   const [viewMode, setViewMode] = useState<'kanban' | 'table' | 'categories' | 'archive'>('kanban');
@@ -163,12 +163,36 @@ export function KanbanBoard() {
   };
 
   const handleArchiveTask = async (taskId: string) => {
-    if (!user) return;
+    if (!user || !board) return;
 
     try {
       await archiveTask(user.id, taskId);
-      await initializeBoard();
-      await loadArchivedTasks();
+
+      // Find the task to archive
+      const taskToArchive = allTasks.find(t => t.id === taskId);
+      if (!taskToArchive) return;
+
+      // Update board state
+      setBoard(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          columns: prev.columns.map(col => ({
+            ...col,
+            tasks: col.tasks.filter(task => task.id !== taskId)
+          }))
+        };
+      });
+
+      // Update archived tasks state
+      setArchivedTasks(prev => [
+        {
+          ...taskToArchive,
+          archived_at: new Date().toISOString()
+        },
+        ...prev
+      ]);
+
       setSelectedTask(null);
     } catch (error: any) {
       console.error('Error archiving task:', error);
@@ -176,12 +200,38 @@ export function KanbanBoard() {
   };
 
   const handleUnarchiveTask = async (taskId: string) => {
-    if (!user) return;
+    if (!user || !board) return;
 
     try {
       await unarchiveTask(user.id, taskId);
-      await loadArchivedTasks();
-      await initializeBoard();
+
+      // Find the task to unarchive
+      const taskToUnarchive = archivedTasks.find(t => t.id === taskId);
+      if (!taskToUnarchive) return;
+
+      // Update archived tasks state
+      setArchivedTasks(prev => prev.filter(task => task.id !== taskId));
+
+      // Find the appropriate column based on task status
+      const targetColumn = board.columns.find(col => col.title === taskToUnarchive.status);
+      if (!targetColumn) return;
+
+      // Update board state
+      setBoard(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          columns: prev.columns.map(col => {
+            if (col.id === targetColumn.id) {
+              return {
+                ...col,
+                tasks: [...col.tasks, { ...taskToUnarchive, archived_at: null }]
+              };
+            }
+            return col;
+          })
+        };
+      });
     } catch (error: any) {
       console.error('Error unarchiving task:', error);
     }

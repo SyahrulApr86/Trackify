@@ -1,6 +1,5 @@
-import React from 'react';
-import { LayoutGrid, Table as TableIcon, FolderKanban, Archive } from 'lucide-react';
 import { Button } from '../ui/button';
+import { LayoutGrid, Table as TableIcon, FolderKanban, Archive } from 'lucide-react';
 
 interface BoardHeaderProps {
   title: string;

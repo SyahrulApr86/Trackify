@@ -1,4 +1,3 @@
-import React from 'react';
 import { ArrowUpDown } from 'lucide-react';
 import { TaskSearch } from '../TaskSearch';
 import { TaskFilters } from '../TaskFilters';

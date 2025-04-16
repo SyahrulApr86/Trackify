@@ -1,4 +1,3 @@
-import React from 'react';
 import { Droppable } from '@hello-pangea/dnd';
 import { Plus } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -69,7 +68,10 @@ export function BoardColumn({
       {addingTaskToColumn === column.id ? (
         <AddTaskDialog
           columnId={column.id}
-          onAdd={onAddTask}
+          onAdd={async (columnId: string) => {
+            onAddTask(columnId);
+            return Promise.resolve();
+          }}
           onCancel={onCancelAdd}
           categories={categories}
         />

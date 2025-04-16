@@ -1,7 +1,6 @@
-import React from 'react';
+import { CategoryColor, availableColors } from '@/types/task';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { availableColors, type CategoryColor } from '@/types/task';
 
 interface ColorPickerProps {
   value: CategoryColor;

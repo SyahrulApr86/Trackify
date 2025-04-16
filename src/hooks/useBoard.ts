@@ -106,11 +106,24 @@ export function useBoard(userId: string | undefined) {
           title: 'My Board',
           columns: newColumns.map(col => ({
             ...col,
-            tasks: (col.tasks || []).map(task => ({
+            tasks: (col.tasks || []).map((task: { 
+              id: string; 
+              title: string;
+              description?: string;
+              deadline?: string;
+              status: string;
+              order: number;
+              column_id: string;
+              user_id: string;
+              created_at: string;
+              archived_at?: string;
+              category?: { name?: string };
+              tags?: Array<{ tag: { id: string; name: string; user_id: string; created_at: string } }>;
+            }) => ({
               ...task,
               category: task.category?.name,
-              tags: task.tags?.map(t => t.tag) || []
-            })).filter(task => !task.archived_at)
+              tags: task.tags?.map((t: { tag: Record<string, unknown> }) => t.tag) || []
+            })).filter((task: { archived_at?: string }) => !task.archived_at)
           })) || []
         });
       } else {
@@ -119,11 +132,24 @@ export function useBoard(userId: string | undefined) {
           title: 'My Board',
           columns: columns.map(col => ({
             ...col,
-            tasks: (col.tasks || []).map(task => ({
+            tasks: (col.tasks || []).map((task: { 
+              id: string; 
+              title: string;
+              description?: string;
+              deadline?: string;
+              status: string;
+              order: number;
+              column_id: string;
+              user_id: string;
+              created_at: string;
+              archived_at?: string;
+              category?: { name?: string };
+              tags?: Array<{ tag: { id: string; name: string; user_id: string; created_at: string } }>;
+            }) => ({
               ...task,
               category: task.category?.name,
-              tags: task.tags?.map(t => t.tag) || []
-            })).filter(task => !task.archived_at)
+              tags: task.tags?.map((t: { tag: Record<string, unknown> }) => t.tag) || []
+            })).filter((task: { archived_at?: string }) => !task.archived_at)
           }))
         });
       }

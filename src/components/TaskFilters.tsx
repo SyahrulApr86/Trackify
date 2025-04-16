@@ -1,4 +1,3 @@
-import React from 'react';
 import { Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { TaskStatus, Category, Tag } from '@/types/task';

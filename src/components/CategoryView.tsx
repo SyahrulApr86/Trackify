@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Task, Category, CategoryColor, getCategoryColors, availableColors } from '@/types/task';
 import { StaticTaskCard } from './kanban/StaticTaskCard';
 import { Button } from './ui/button';

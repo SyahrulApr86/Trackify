@@ -63,7 +63,14 @@ export function TaskDetailsDialog({
         const tags = await getTaskTags(user.id, task.id);
         setFormData(prev => ({
           ...prev,
-          tags: tags.map(tag => tag.name)
+          tags: tags.map((t: unknown) => {
+            if (t && typeof t === 'object' && 'tag' in t && 
+                t.tag && typeof t.tag === 'object' && 'name' in t.tag && 
+                typeof t.tag.name === 'string') {
+              return t.tag.name;
+            }
+            return '';
+          })
         }));
       } catch (error) {
         console.error('Error loading task tags:', error);
@@ -100,7 +107,13 @@ export function TaskDetailsDialog({
 
     await onUpdate(task.id, {
       ...formData,
-      deadline: deadline || null
+      tags: formData.tags.map(tag => ({ 
+        id: '', 
+        name: tag, 
+        user_id: '', 
+        created_at: '' 
+      })),
+      deadline: deadline || undefined
     });
     setIsEditing(false);
   };

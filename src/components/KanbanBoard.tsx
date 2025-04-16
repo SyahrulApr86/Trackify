@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { ArchiveView } from './ArchiveView';

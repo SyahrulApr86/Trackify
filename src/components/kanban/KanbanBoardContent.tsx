@@ -1,4 +1,3 @@
-import React from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { BoardColumn } from './BoardColumn';
 import { CategoryView } from '../CategoryView';
@@ -78,7 +77,13 @@ export function KanbanBoardContent({
     <TaskTable
       tasks={filteredTasks}
       onUpdateTask={onUpdateTask}
-      onDeleteTask={onDeleteTask}
+      onDeleteTask={(taskId) => {
+        const task = filteredTasks.find(t => t.id === taskId);
+        if (task) {
+          onDeleteTask(task);
+        }
+        return Promise.resolve();
+      }}
       onBulkUpdateTasks={onBulkUpdateTasks}
       categories={categories}
     />

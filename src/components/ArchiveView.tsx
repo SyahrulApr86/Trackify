@@ -1,4 +1,3 @@
-import React from 'react';
 import { format } from 'date-fns';
 import { Archive, Calendar, Clock } from 'lucide-react';
 import { Task, getCategoryColors, Category } from '@/types/task';

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Pencil, Trash2, Plus, AlertTriangle, ChevronDown, Calendar, Flag, Search } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useTags } from '@/hooks/useTags';

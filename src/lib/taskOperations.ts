@@ -63,9 +63,10 @@ export async function updateTask(
         } else {
           categoryId = categoryData;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error managing category:', error);
-        throw new Error(`Failed to manage category: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        throw new Error(`Failed to manage category: ${errorMessage}`);
       }
     }
 
@@ -87,8 +88,14 @@ export async function updateTask(
           .eq('task_id', taskId);
 
         if (currentTags) {
-          const currentTagNames = currentTags.map(t => t.tag.name);
-          const tagsToRemove = currentTagNames.filter(name => !updates.tags?.includes(name));
+          // Ekstrak tag name dari respons saat ini
+          type TaskTag = { tag?: { name?: string; id?: string } };
+          const currentTagNames = (currentTags as TaskTag[]).map(t => t.tag?.name || '');
+          
+          // Bandingkan tag saat ini dengan tag yang akan diperbarui
+          const tagsToRemove = currentTagNames.filter((name: string) => 
+            !updates.tags?.some((tag: { name?: string }) => tag.name === name)
+          );
           
           if (tagsToRemove.length > 0) {
             // Restore context before removing tags
@@ -108,17 +115,18 @@ export async function updateTask(
             }
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error managing tags:', error);
-        throw new Error(`Failed to manage tags: ${error.message}`);
+        throw new Error(`Failed to manage tags: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
-    // Set completed_at when status changes to Done
+    // Jika status berubah menjadi "Done", tambahkan completed_at timestamp
     if (updates.status === 'Done') {
       updates.completed_at = new Date().toISOString();
-    } else if (updates.status && updates.status !== 'Done') {
-      updates.completed_at = null;
+    } else if (updates.status && (updates.status === 'To Do' || updates.status === 'In Progress')) {
+      // Jika status berubah dari "Done" ke status lain, hapus completed_at
+      updates.completed_at = undefined;
     }
 
     // Restore context before final update
@@ -157,7 +165,7 @@ export async function updateTask(
     return {
       ...updatedTask,
       category: updatedTask.category?.name,
-      tags: updatedTask.tags.map(t => t.tag)
+      tags: updatedTask.tags.map((t: { tag: { id: string; name: string; user_id: string; created_at: string } }) => t.tag)
     };
   } catch (error) {
     console.error('Error updating task:', error);
@@ -244,9 +252,10 @@ export async function createTask(
         } else {
           categoryId = categoryData;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error managing category:', error);
-        throw new Error(`Failed to manage category: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        throw new Error(`Failed to manage category: ${errorMessage}`);
       }
     }
 
@@ -328,11 +337,11 @@ export async function createTask(
         return {
           ...updatedTask,
           category: updatedTask.category?.name,
-          tags: updatedTask.tags.map(t => t.tag)
+          tags: updatedTask.tags.map((t: { tag: { id: string; name: string; user_id: string; created_at: string } }) => t.tag)
         };
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error managing tags:', error);
-        throw new Error(`Failed to manage tags: ${error.message}`);
+        throw new Error(`Failed to manage tags: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
@@ -405,17 +414,19 @@ export async function bulkUpdateTasks(
         } else {
           categoryId = categoryData;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error managing category:', error);
-        throw new Error(`Failed to manage category: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        throw new Error(`Failed to manage category: ${errorMessage}`);
       }
     }
 
-    // Set completed_at when status changes to Done
+    // Jika status berubah menjadi "Done", tambahkan completed_at timestamp
     if (updates.status === 'Done') {
       updates.completed_at = new Date().toISOString();
-    } else if (updates.status && updates.status !== 'Done') {
-      updates.completed_at = null;
+    } else if (updates.status && (updates.status === 'To Do' || updates.status === 'In Progress')) {
+      // Jika status berubah dari "Done" ke status lain, hapus completed_at
+      updates.completed_at = undefined;
     }
 
     const taskUpdates = {

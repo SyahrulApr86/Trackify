@@ -19,11 +19,12 @@ export function DeadlineReminder({ tasks, categories = [], onTaskClick }: Deadli
   );
 
   const overdueTasks = incompleteTasks.filter(
-      task => isPast(new Date(task.deadline))
+      task => task.deadline && isPast(new Date(task.deadline))
   );
 
   const todayTasks = incompleteTasks.filter(
       task => {
+        if (!task.deadline) return false;
         const deadline = new Date(task.deadline);
         return isToday(deadline) && !isPast(deadline);
       }
@@ -31,6 +32,7 @@ export function DeadlineReminder({ tasks, categories = [], onTaskClick }: Deadli
 
   const upcomingTasks = incompleteTasks.filter(
       task => {
+        if (!task.deadline) return false;
         const deadline = new Date(task.deadline);
         return !isPast(deadline) && !isToday(deadline) && deadline <= addDays(new Date(), 7);
       }
@@ -122,7 +124,7 @@ export function DeadlineReminder({ tasks, categories = [], onTaskClick }: Deadli
                       </span>
                         )}
                         <p className="text-sm text-muted-foreground">
-                          Due {format(new Date(task.deadline), 'MMM d, yyyy HH:mm')}
+                          Due {task.deadline && format(new Date(task.deadline), 'MMM d, yyyy HH:mm')}
                         </p>
                       </div>
                     </div>

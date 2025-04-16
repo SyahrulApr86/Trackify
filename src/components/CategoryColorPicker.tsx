@@ -1,4 +1,3 @@
-import React from 'react';
 import { Label } from './ui/label';
 import { ColorPicker } from './ui/color-picker';
 import { CategoryColor } from '@/types/task';

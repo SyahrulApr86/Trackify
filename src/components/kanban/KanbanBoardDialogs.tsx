@@ -1,4 +1,3 @@
-import React from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { AddTaskDialog } from './AddTaskDialog';
 import { TaskDetailsDialog } from './TaskDetailsDialog';

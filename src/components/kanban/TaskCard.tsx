@@ -1,4 +1,3 @@
-import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { GripVertical, Trash2, Flag } from 'lucide-react';
 import { Button } from '../ui/button';

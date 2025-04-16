@@ -1,4 +1,3 @@
-import React from 'react';
 import { Trash2, Flag } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Task, getCategoryColors } from '@/types/task';

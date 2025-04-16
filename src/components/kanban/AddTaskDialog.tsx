@@ -29,25 +29,20 @@ export function AddTaskDialog({
   onCategoriesChange
 }: AddTaskDialogProps) {
   const { user } = useAuthStore();
+  const [hasDeadline, setHasDeadline] = useState(false);
+  const [customCategory, setCustomCategory] = useState(false);
   const { tags: allTags } = useTags(user?.id);
-  
-  // Get today's date at 23:59
-  const today = new Date();
-  today.setHours(23, 59, 0, 0);
-  const defaultDeadline = format(today, "yyyy-MM-dd'T'HH:mm");
 
   const [taskForm, setTaskForm] = useState({
     title: '',
     description: '',
-    deadline: defaultDeadline,
+    deadline: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
     category: defaultCategory || '',
     newCategory: '',
-    newCategoryColor: availableColors[0],
+    newCategoryColor: 'blue' as CategoryColor,
     tags: [] as string[],
     priority: 99999
   });
-  const [customCategory, setCustomCategory] = useState(false);
-  const [hasDeadline, setHasDeadline] = useState(true);
 
   const handleDeadlineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -69,7 +64,7 @@ export function AddTaskDialog({
     const category = customCategory ? taskForm.newCategory : taskForm.category;
     
     // Only include deadline if hasDeadline is true
-    let deadline = hasDeadline ? taskForm.deadline : null;
+    let deadline = hasDeadline ? taskForm.deadline : undefined;
     if (deadline) {
       const date = parse(deadline, "yyyy-MM-dd'T'HH:mm", new Date());
       if (isValid(date)) {
@@ -79,11 +74,11 @@ export function AddTaskDialog({
 
     await onAdd(columnId, {
       title: taskForm.title,
-      description: taskForm.description || null,
+      description: taskForm.description || undefined,
       deadline: deadline,
-      category: category || null,
+      category: category || undefined,
       categoryColor: customCategory ? taskForm.newCategoryColor : undefined,
-      tags: taskForm.tags,
+      tags: taskForm.tags.map(tag => ({ id: '', name: tag, user_id: '', created_at: '' })),
       priority: taskForm.priority
     });
 

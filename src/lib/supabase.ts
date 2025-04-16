@@ -12,11 +12,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
-    flowType: 'pkce',
-    // Skip email confirmation
-    emailAuth: {
-      requireEmailConfirmation: false
-    }
+    flowType: 'pkce'
   },
   global: {
     headers: {

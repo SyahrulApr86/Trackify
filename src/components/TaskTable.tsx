@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -53,6 +53,11 @@ interface TaskTableProps {
   onBulkUpdateTasks: (taskIds: string[], updates: Partial<Task>) => Promise<void>;
 }
 
+// Interface untuk nilai edit yang disiapkan untuk TagInput
+interface EditValues extends Omit<Partial<Task>, 'tags'> {
+  tags?: string[];
+}
+
 type SortField = 'deadline' | 'category' | 'status' | 'priority';
 type SortOrder = 'asc' | 'desc';
 
@@ -67,7 +72,7 @@ export function TaskTable({
   const [editingTask, setEditingTask] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-  const [editValues, setEditValues] = useState<Partial<Task>>({});
+  const [editValues, setEditValues] = useState<EditValues>({});
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -139,7 +144,30 @@ export function TaskTable({
   };
 
   const handleSaveEdit = async (taskId: string) => {
-    await onUpdateTask(taskId, editValues);
+    // Konversi tags dari string[] ke Tag[] sebelum mengirim ke API
+    const updatedTask = { ...editValues };
+    
+    // Ubah properti tags untuk sesuai dengan tipe Tag[]
+    if (updatedTask.tags && Array.isArray(updatedTask.tags)) {
+      const tagObjects = (updatedTask.tags as string[]).map(tagName => ({
+        id: '',
+        name: tagName,
+        user_id: '',
+        created_at: ''
+      }));
+      
+      // Ganti dengan nilai yang telah dikonversi
+      const taskToUpdate = { ...updatedTask };
+      delete taskToUpdate.tags;
+      
+      await onUpdateTask(taskId, {
+        ...taskToUpdate,
+        tags: tagObjects
+      });
+    } else {
+      await onUpdateTask(taskId, updatedTask as Partial<Task>);
+    }
+    
     setEditingTask(null);
     setEditValues({});
   };

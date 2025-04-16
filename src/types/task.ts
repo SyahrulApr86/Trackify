@@ -76,7 +76,7 @@ export const availableColors = [
 
 export type CategoryColor = typeof availableColors[number];
 
-export function getCategoryColors(categoryName: string | undefined | null, customColor?: string): { bg: string; text: string } {
+export function getCategoryColors(_categoryName: string | undefined | null, customColor?: string): { bg: string; text: string } {
   // If a custom color is provided and it's valid, use it
   if (customColor && availableColors.includes(customColor as CategoryColor)) {
     return {

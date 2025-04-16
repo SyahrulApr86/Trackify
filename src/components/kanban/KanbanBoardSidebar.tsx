@@ -1,4 +1,3 @@
-import React from 'react';
 import { Calendar } from '../Calendar';
 import { TimeProgressBar } from '../TimeProgressBar';
 import { Task } from '@/types/task';

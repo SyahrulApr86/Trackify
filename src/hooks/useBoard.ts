@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Board } from '@/types/task';
+import { Board, Task } from '@/types/task';
 import { restoreUserContext } from '@/lib/auth';
 
 export function useBoard(userId: string | undefined) {
@@ -8,7 +8,7 @@ export function useBoard(userId: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const initializeBoard = async () => {
+  const initializeBoard = useCallback(async () => {
     if (!userId) return;
     
     try {
@@ -17,7 +17,7 @@ export function useBoard(userId: string | undefined) {
 
       await restoreUserContext(userId);
 
-      let { data: boards, error: boardsError } = await supabase
+      const { data: boards, error: boardsError } = await supabase
         .from('boards')
         .select('*')
         .eq('user_id', userId)
@@ -127,18 +127,37 @@ export function useBoard(userId: string | undefined) {
           }))
         });
       }
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     if (userId) {
       initializeBoard();
     }
-  }, [userId]);
+  }, [userId, initializeBoard]);
 
-  return { board, setBoard, loading, error, initializeBoard };
+  const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
+    if (!userId) return;
+    try {
+      await restoreUserContext(userId);
+      const { error } = await supabase
+        .from('tasks')
+        .update(updates)
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      await initializeBoard();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Error updating task:', errorMessage);
+    }
+  };
+
+  return { board, setBoard, loading, error, initializeBoard, handleUpdateTask };
 }

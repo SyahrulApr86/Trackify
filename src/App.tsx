@@ -17,7 +17,7 @@ function App() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [view, setView] = useState<'tasks' | 'notes' | 'progress' | 'tags'>('tasks');
-  const { signIn, signUp, signOut, user, loading, error, clearError } = useAuthStore();
+  const { signIn, signUp, signOut, user, loading, clearError, error } = useAuthStore();
 
   // Restore user context when the app loads with a persisted user
   useEffect(() => {
@@ -38,7 +38,7 @@ function App() {
       } else {
         await signIn(username, password);
       }
-    } catch (error) {
+    } catch {
       // Error is handled by the store
     }
   };

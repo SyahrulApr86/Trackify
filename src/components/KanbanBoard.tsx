@@ -14,6 +14,8 @@ import { KanbanBoardContent } from './kanban/KanbanBoardContent';
 import { KanbanBoardSidebar } from './kanban/KanbanBoardSidebar';
 import { KanbanBoardDialogs } from './kanban/KanbanBoardDialogs';
 import { updateTask, deleteTask, archiveTask, unarchiveTask, createTask, updateTaskPosition, bulkUpdateTasks } from '@/lib/taskOperations';
+import { DropResult } from '@hello-pangea/dnd';
+import { Button } from './ui/button';
 
 type SortField = 'deadline' | 'priority' | 'none';
 type SortOrder = 'asc' | 'desc';
@@ -34,10 +36,14 @@ export function KanbanBoard() {
   
   const [kanbanFilter, setKanbanFilter] = useState<string | 'all'>('all');
   const [kanbanTagFilter, setKanbanTagFilter] = useState<string | 'all'>('all');
-  const [tableFilters, setTableFilters] = useState({
-    category: 'all' as string | 'all',
-    status: 'all' as TaskStatus | 'all',
-    tag: 'all' as string | 'all'
+  const [tableFilters, setTableFilters] = useState<{
+    category: string | 'all';
+    status: TaskStatus | 'all';
+    tag: string | 'all';
+  }>({
+    category: 'all',
+    status: 'all',
+    tag: 'all'
   });
   const [categoryViewStatus, setCategoryViewStatus] = useState<TaskStatus | 'all'>('all');
   const [categoryViewTag, setCategoryViewTag] = useState<string | 'all'>('all');
@@ -128,8 +134,9 @@ export function KanbanBoard() {
           await updateTaskPosition(user.id, t.id, destination.droppableId, t.status, index);
         }
       }
-    } catch (error) {
-      console.error('Error updating task position:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Error updating task position:', errorMessage);
       initializeBoard();
     }
   };
@@ -152,8 +159,9 @@ export function KanbanBoard() {
           }))
         };
       });
-    } catch (error: any) {
-      console.error('Error updating task:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Error updating task:', errorMessage);
     }
   };
 
@@ -173,8 +181,9 @@ export function KanbanBoard() {
           }))
         };
       });
-    } catch (error: any) {
-      console.error('Error deleting task:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Error deleting task:', errorMessage);
     }
   };
 
@@ -210,46 +219,32 @@ export function KanbanBoard() {
       ]);
 
       setSelectedTask(null);
-    } catch (error: any) {
-      console.error('Error archiving task:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Error archiving task:', errorMessage);
     }
   };
 
   const handleUnarchiveTask = async (taskId: string) => {
-    if (!user || !board) return;
-
+    if (!user) return;
     try {
       await unarchiveTask(user.id, taskId);
-
-      // Find the task to unarchive
-      const taskToUnarchive = archivedTasks.find(t => t.id === taskId);
-      if (!taskToUnarchive) return;
-
-      // Update archived tasks state
-      setArchivedTasks(prev => prev.filter(task => task.id !== taskId));
-
-      // Find the appropriate column based on task status
-      const targetColumn = board.columns.find(col => col.title === taskToUnarchive.status);
-      if (!targetColumn) return;
-
-      // Update board state
-      setBoard(prev => {
-        if (!prev) return prev;
+      setBoard((prev) => {
+        if (!prev) return null;
         return {
           ...prev,
-          columns: prev.columns.map(col => {
-            if (col.id === targetColumn.id) {
-              return {
-                ...col,
-                tasks: [...col.tasks, { ...taskToUnarchive, archived_at: null }]
-              };
-            }
-            return col;
-          })
+          columns: prev.columns.map((column) => ({
+            ...column,
+            tasks: column.tasks.map((task) =>
+              task.id === taskId ? { ...task, archived_at: undefined } : task
+            ),
+          })),
         };
       });
-    } catch (error: any) {
-      console.error('Error unarchiving task:', error);
+      setArchivedTasks((prev) => prev?.filter((task) => task.id !== taskId) ?? []);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Error unarchiving task:', errorMessage);
     }
   };
 
@@ -281,8 +276,9 @@ export function KanbanBoard() {
       if (taskData.category && !categories.some(cat => cat.name === taskData.category)) {
         await loadCategories();
       }
-    } catch (error: any) {
-      console.error('Error adding task:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Error adding task:', errorMessage);
     }
   };
 
@@ -292,8 +288,9 @@ export function KanbanBoard() {
     try {
       await bulkUpdateTasks(user.id, taskIds, updates);
       await initializeBoard();
-    } catch (error: any) {
-      console.error('Error updating tasks:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Error updating tasks:', errorMessage);
     }
   };
 
@@ -410,6 +407,17 @@ export function KanbanBoard() {
     }
   };
 
+  const handleTableFiltersChange = (filters: {
+    category?: string | 'all';
+    status?: TaskStatus | 'all';
+    tag?: string | 'all';
+  }) => {
+    setTableFilters(prev => ({
+      ...prev,
+      ...filters
+    }));
+  };
+
   const filteredBoard = getFilteredBoard();
   const filteredTasks = getFilteredTasks();
 
@@ -474,7 +482,7 @@ export function KanbanBoard() {
             kanbanTagFilter={kanbanTagFilter}
             onKanbanTagFilterChange={setKanbanTagFilter}
             tableFilters={tableFilters}
-            onTableFiltersChange={setTableFilters}
+            onTableFiltersChange={handleTableFiltersChange}
             categoryViewStatus={categoryViewStatus}
             onCategoryViewStatusChange={setCategoryViewStatus}
             categoryViewTag={categoryViewTag}

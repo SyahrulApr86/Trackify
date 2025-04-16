@@ -1,5 +1,3 @@
-import { type } from "os";
-
 export type TaskStatus = 'To Do' | 'In Progress' | 'Done';
 export type TaskCategory = string;
 

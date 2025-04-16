@@ -2,7 +2,7 @@ import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { GripVertical, Trash2, Flag } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Task, Category, getCategoryColors } from '@/types/task';
+import { Task, getCategoryColors } from '@/types/task';
 
 interface TaskCardProps {
   task: Task & { categoryColor?: string }; // Updated to match StaticTaskCardProps

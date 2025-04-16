@@ -34,8 +34,6 @@ import {
 } from './ui/alert-dialog';
 import { Checkbox } from './ui/checkbox';
 import { 
-  Calendar,
-  MoreHorizontal, 
   ArrowUpDown,
   Check,
   Pencil,

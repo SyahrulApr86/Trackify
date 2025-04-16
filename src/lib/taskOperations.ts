@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { Task } from '@/types/task';
 import { restoreUserContext } from './auth';
-import { addDays, isPast } from 'date-fns';
+import { addDays } from 'date-fns';
 
 // Function to check if a task should be archived
 async function checkAndArchiveTasks(userId: string) {

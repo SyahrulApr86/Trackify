@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Category } from '@/types/task';
+import { Category, CategoryColor } from '@/types/task';
 import { restoreUserContext } from '@/lib/auth';
 
 export function useCategories(userId: string | undefined) {
@@ -8,7 +8,7 @@ export function useCategories(userId: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     if (!userId) return;
 
     try {
@@ -25,18 +25,40 @@ export function useCategories(userId: string | undefined) {
 
       if (error) throw error;
       setCategories(data || []);
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     if (userId) {
       loadCategories();
     }
-  }, [userId]);
+  }, [userId, loadCategories]);
 
-  return { categories, setCategories, loading, error, loadCategories };
+  const handleCreateCategory = async (name: string, color: CategoryColor) => {
+    if (!userId) return;
+    try {
+      await restoreUserContext(userId);
+      const { data, error } = await supabase
+        .from('categories')
+        .insert([{ name, color, user_id: userId }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await loadCategories();
+      return data;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Error creating category:', errorMessage);
+      throw error;
+    }
+  };
+
+  return { categories, setCategories, loading, error, loadCategories, handleCreateCategory };
 }

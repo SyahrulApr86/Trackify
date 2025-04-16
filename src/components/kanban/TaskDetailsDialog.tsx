@@ -6,7 +6,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Task, Category, Tag, getCategoryColors } from '@/types/task';
+import { Task, Category, getCategoryColors } from '@/types/task';
 import { TagInput } from '../TagInput';
 import { useAuthStore } from '@/store/authStore';
 import { getTaskTags } from '@/lib/tagOperations';

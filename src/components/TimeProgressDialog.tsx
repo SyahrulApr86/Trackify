@@ -60,32 +60,50 @@ export function TimeProgressDialog({
 
   const handleSubmit = async () => {
     if (!user) return;
-
     try {
       setLoading(true);
       setError(null);
-      
+
+      const startDate = new Date(formData.start_date);
+      startDate.setHours(formData.start_hour, formData.start_minute, 0, 0);
+
+      const endDate = new Date(formData.end_date);
+      endDate.setHours(formData.end_hour, formData.end_minute, 0, 0);
+
       if (editingProgress) {
-        await updateTimeProgress(user.id, editingProgress.id, formData);
+        await updateTimeProgress(
+          user.id,
+          editingProgress.id,
+          {
+            title: formData.title,
+            start_date: startDate.toISOString(),
+            end_date: endDate.toISOString(),
+            start_hour: formData.start_hour,
+            start_minute: formData.start_minute,
+            end_hour: formData.end_hour,
+            end_minute: formData.end_minute
+          }
+        );
       } else {
-        await createTimeProgress(user.id, formData);
+        await createTimeProgress(
+          user.id,
+          {
+            title: formData.title,
+            start_date: startDate.toISOString(),
+            end_date: endDate.toISOString(),
+            start_hour: formData.start_hour,
+            start_minute: formData.start_minute,
+            end_hour: formData.end_hour,
+            end_minute: formData.end_minute
+          }
+        );
       }
-      
+
       onSuccess();
       onOpenChange(false);
-      
-      // Reset form
-      setFormData({
-        title: '',
-        start_date: format(new Date(), 'yyyy-MM-dd'),
-        start_hour: 6,
-        start_minute: 0,
-        end_date: format(new Date(), 'yyyy-MM-dd'),
-        end_hour: 6,
-        end_minute: 0
-      });
-    } catch (error: any) {
-      setError(error.message);
+    } catch (err) {
+      console.error('Error saving time progress:', err);
+      setError('Failed to save time progress');
     } finally {
       setLoading(false);
     }

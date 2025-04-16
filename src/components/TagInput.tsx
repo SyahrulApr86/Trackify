@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { X } from 'lucide-react';
-import { Input } from './ui/input';
 import {
   Select,
   SelectContent,

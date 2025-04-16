@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Pencil, Trash2, Plus, AlertTriangle, ChevronDown, ChevronUp, Calendar, Flag, Search } from 'lucide-react';
+import { Pencil, Trash2, Plus, AlertTriangle, ChevronDown, Calendar, Flag, Search } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useTags } from '@/hooks/useTags';
 import { useBoard } from '@/hooks/useBoard';
@@ -75,16 +75,16 @@ export function TagManagement() {
 
   const handleCreate = async () => {
     if (!user || !tagName.trim()) return;
-
     try {
       setIsLoading(true);
       setError(null);
       await createTag(user.id, tagName.trim());
       await loadTags();
-      setIsCreating(false);
       setTagName('');
-    } catch (error: any) {
-      setError(error.message);
+      setIsCreating(false);
+    } catch (err) {
+      console.error('Error creating tag:', err);
+      setError('Failed to create tag');
     } finally {
       setIsLoading(false);
     }
@@ -92,16 +92,16 @@ export function TagManagement() {
 
   const handleUpdate = async () => {
     if (!user || !editingTag || !tagName.trim()) return;
-
     try {
       setIsLoading(true);
       setError(null);
       await updateTag(user.id, editingTag.id, tagName.trim());
       await loadTags();
-      setEditingTag(null);
       setTagName('');
-    } catch (error: any) {
-      setError(error.message);
+      setEditingTag(null);
+    } catch (err) {
+      console.error('Error updating tag:', err);
+      setError('Failed to update tag');
     } finally {
       setIsLoading(false);
     }
@@ -109,15 +109,15 @@ export function TagManagement() {
 
   const handleDelete = async () => {
     if (!user || !tagToDelete) return;
-
     try {
       setIsLoading(true);
       setError(null);
       await deleteTag(user.id, tagToDelete.id);
       await loadTags();
       setTagToDelete(null);
-    } catch (error: any) {
-      setError(error.message);
+    } catch (err) {
+      console.error('Error deleting tag:', err);
+      setError('Failed to delete tag');
     } finally {
       setIsLoading(false);
     }

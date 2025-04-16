@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Task, Category, availableColors, CategoryColor, getCategoryColors } from '@/types/task';
+import { Task, Category, CategoryColor, getCategoryColors, availableColors } from '@/types/task';
 import { StaticTaskCard } from './kanban/StaticTaskCard';
 import { Button } from './ui/button';
 import { Plus, Trash2, AlertTriangle, Settings } from 'lucide-react';
@@ -49,9 +49,9 @@ export function CategoryView({
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [categoryToEdit, setCategoryToEdit] = useState<Category | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryColor, setNewCategoryColor] = useState<CategoryColor>('blue');
+  const [selectedColor, setSelectedColor] = useState<CategoryColor>(availableColors[0]);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   
   const tasksByCategory = categories.reduce((acc, category) => {
     acc[category.name] = tasks.filter(task => task.category === category.name);
@@ -62,115 +62,62 @@ export function CategoryView({
 
   const handleDeleteCategory = async (category: Category) => {
     if (!user) return;
-
     try {
-      setIsLoading(true);
-      setError(null);
-
       await restoreUserContext(user.id);
-      
-      const { data, error } = await supabase
-        .rpc('delete_category', { p_category_id: category.id });
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', category.id);
 
       if (error) throw error;
 
-      if (!data) {
-        setError('Cannot delete category that contains tasks');
-        return;
-      }
-
-      await restoreUserContext(user.id);
-
-      const { data: updatedCategories, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('name');
-
-      if (categoriesError) throw categoriesError;
-      onCategoriesChange(updatedCategories || []);
-    } catch (error: any) {
-      setError(error.message);
-    } finally {
-      setIsLoading(false);
+      onCategoriesChange(categories.filter(c => c.id !== category.id));
       setCategoryToDelete(null);
+    } catch (err) {
+      console.error('Error deleting category:', err);
     }
   };
 
   const handleCreateCategory = async () => {
-    if (!newCategoryName.trim() || !user) return;
-
+    if (!user) return;
     try {
-      setIsLoading(true);
-      setError(null);
-      
       await restoreUserContext(user.id);
-      
-      const { data: newCategory, error: categoryError } = await supabase
+      const { data, error } = await supabase
         .from('categories')
-        .insert([{
-          name: newCategoryName.trim(),
-          user_id: user.id,
-          color: newCategoryColor
-        }])
+        .insert([{ name: newCategoryName, user_id: user.id, color: selectedColor }])
         .select()
         .single();
 
-      if (categoryError) throw categoryError;
+      if (error) throw error;
 
-      await restoreUserContext(user.id);
-
-      const { data: updatedCategories, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('name');
-
-      if (categoriesError) throw categoriesError;
-      onCategoriesChange(updatedCategories || []);
-
-      setNewCategoryName('');
-      setNewCategoryColor('blue');
+      onCategoriesChange([...categories, data]);
       setIsCreatingCategory(false);
-    } catch (error: any) {
-      setError(error.message);
-    } finally {
-      setIsLoading(false);
+      setNewCategoryName('');
+      setSelectedColor(availableColors[0]);
+    } catch (err) {
+      console.error('Error creating category:', err);
     }
   };
 
   const handleUpdateCategory = async () => {
-    if (!categoryToEdit || !user) return;
-
+    if (!user || !categoryToEdit) return;
     try {
-      setIsLoading(true);
-      setError(null);
-      
       await restoreUserContext(user.id);
-      
-      const { error: updateError } = await supabase
+      const { data, error } = await supabase
         .from('categories')
-        .update({ color: newCategoryColor })
-        .eq('id', categoryToEdit.id);
+        .update({ name: newCategoryName, color: selectedColor })
+        .eq('id', categoryToEdit.id)
+        .select()
+        .single();
 
-      if (updateError) throw updateError;
+      if (error) throw error;
 
-      await restoreUserContext(user.id);
-
-      const { data: updatedCategories, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('name');
-
-      if (categoriesError) throw categoriesError;
-      onCategoriesChange(updatedCategories || []);
-
+      onCategoriesChange(categories.map(c => c.id === categoryToEdit.id ? data : c));
       setCategoryToEdit(null);
-    } catch (error: any) {
-      setError(error.message);
-    } finally {
-      setIsLoading(false);
+      setNewCategoryName('');
+      setSelectedColor(availableColors[0]);
+    } catch (err) {
+      console.error('Error updating category:', err);
     }
   };
 
@@ -199,7 +146,7 @@ export function CategoryView({
               className="h-8 w-8 p-0"
               onClick={() => {
                 setCategoryToEdit(category);
-                setNewCategoryColor((category.color || 'blue') as CategoryColor);
+                setSelectedColor((category.color || availableColors[0]) as CategoryColor);
               }}
             >
               <Settings className="h-4 w-4" />
@@ -313,8 +260,8 @@ export function CategoryView({
               />
             </div>
             <CategoryColorPicker
-              value={newCategoryColor}
-              onChange={setNewCategoryColor}
+              value={selectedColor}
+              onChange={setSelectedColor}
             />
           </div>
           <DialogFooter>
@@ -352,8 +299,8 @@ export function CategoryView({
               </div>
             )}
             <CategoryColorPicker
-              value={newCategoryColor}
-              onChange={setNewCategoryColor}
+              value={selectedColor}
+              onChange={setSelectedColor}
             />
           </div>
           <DialogFooter>

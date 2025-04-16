@@ -95,9 +95,9 @@ async function setUserContext(userId: string): Promise<void> {
     if (verifyError) {
       throw new Error('Failed to verify user context');
     }
-  } catch (error) {
-    console.error('Error setting user context:', error);
-    throw error;
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    throw new Error(errorMessage);
   }
 }
 
@@ -121,8 +121,9 @@ export async function restoreUserContext(userId: string, maxRetries = 3): Promis
       }
       
       lastError = new Error('Failed to verify user context');
-    } catch (error: any) {
-      lastError = error;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      lastError = new Error(errorMessage);
       console.error(`Failed to restore user context (attempt ${attempt}):`, error);
       
       if (attempt < maxRetries) {

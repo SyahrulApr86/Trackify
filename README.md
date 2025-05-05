@@ -4,55 +4,55 @@ A modern task and note management application built with React, TypeScript, and 
 
 ![Trackify Screenshot](./media/img.png)
 
-## ✨ Features
+## Features
 
-### 📋 Task Management
+### Task Management
 - **Kanban Board**: Intuitive drag-and-drop interface for managing tasks
 - **Multiple Views**: 
-  - 📊 Kanban board for visual task management
-  - 📑 Table view with sorting and bulk actions
-  - 📁 Category view for better organization
-  - 🗄️ Archive for completed tasks
+  - Kanban board for visual task management
+  - Table view with sorting and bulk actions
+  - Category view for better organization
+  - Archive for completed tasks
 - **Rich Task Features**:
-  - ⏰ Deadline tracking with reminders
-  - 🏷️ Customizable categories
-  - 🔖 Flexible tagging system
-  - 📝 Detailed task descriptions
-  - 📊 Status tracking (To Do, In Progress, Done)
-  - 🔄 Automatic archiving of completed tasks after 7 days
+  - Deadline tracking with reminders
+  - Customizable categories
+  - Flexible tagging system
+  - Detailed task descriptions
+  - Status tracking (To Do, In Progress, Done)
+  - Automatic archiving of completed tasks after 7 days
 
-### 📓 Daily Notes
-- 📝 Create and manage daily notes
-- 📅 Date-based organization
-- 🔍 Quick view and edit functionality
-- 🎯 Focus on daily tasks and thoughts
-- 📊 Organized grid layout view
+### Daily Notes
+- Create and manage daily notes
+- Date-based organization
+- Quick view and edit functionality
+- Focus on daily tasks and thoughts
+- Organized grid layout view
 
-### 👤 User Features
-- 🔐 Secure authentication
-- 🏠 Personal workspace
-- 🔒 Data privacy with row-level security
-- 🎨 Clean and intuitive interface
+### User Features
+- Secure authentication
+- Personal workspace
+- Data privacy with row-level security
+- Clean and intuitive interface
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
-- ⚛️ React 18 with TypeScript
-- 🚀 Vite for fast development
-- 🎨 Tailwind CSS for styling
-- 🎯 Lucide Icons for beautiful icons
-- 🔄 Hello Pangea DND for drag-and-drop
-- 🎛️ Radix UI for accessible components
-- 📅 Date-fns for date manipulation
-- 🗃️ Zustand for state management
+- React 18 with TypeScript
+- Vite for fast development
+- Tailwind CSS for styling
+- Lucide Icons for beautiful icons
+- Hello Pangea DND for drag-and-drop
+- Radix UI for accessible components
+- Date-fns for date manipulation
+- Zustand for state management
 
 ### Backend
-- 🔥 Supabase (PostgreSQL)
-- 🔒 Row Level Security
-- 🔄 Real-time capabilities
-- 🔑 Secure authentication system
+- Supabase (PostgreSQL)
+- Row Level Security
+- Real-time capabilities
+- Secure authentication system
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js 16 or higher
@@ -103,7 +103,7 @@ docker compose logs -f
 
 2. Access the application at `http://localhost:8010`
 
-## 🗄️ Database Setup
+## Database Setup
 
 1. Create a new Supabase project
 2. Run the migration files:
@@ -116,7 +116,7 @@ docker compose logs -f
 3. Enable Row Level Security (RLS)
 4. Configure authentication settings
 
-## 💡 Usage Guide
+## Usage Guide
 
 ### Task Management
 
@@ -163,11 +163,11 @@ docker compose logs -f
 - Edit or delete as needed
 - Organize by date
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [Lucide Icons](https://lucide.dev/) - Beautiful, consistent icons
 - [Radix UI](https://www.radix-ui.com/) - Accessible component primitives

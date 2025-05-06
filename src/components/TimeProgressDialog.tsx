@@ -69,7 +69,7 @@ export function TimeProgressDialog({
 
       const endDate = new Date(formData.end_date);
       endDate.setHours(formData.end_hour, formData.end_minute, 0, 0);
-
+      
       if (editingProgress) {
         await updateTimeProgress(
           user.id,
@@ -98,7 +98,7 @@ export function TimeProgressDialog({
           }
         );
       }
-
+      
       onSuccess();
       onOpenChange(false);
     } catch (err) {

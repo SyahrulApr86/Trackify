@@ -7,8 +7,9 @@ A modern task and note management application built with React, TypeScript, and 
 ## Features
 
 ### Task Management
+
 - **Kanban Board**: Intuitive drag-and-drop interface for managing tasks
-- **Multiple Views**: 
+- **Multiple Views**:
   - Kanban board for visual task management
   - Table view with sorting and bulk actions
   - Category view for better organization
@@ -22,6 +23,7 @@ A modern task and note management application built with React, TypeScript, and 
   - Automatic archiving of completed tasks after 7 days
 
 ### Daily Notes
+
 - Create and manage daily notes
 - Date-based organization
 - Quick view and edit functionality
@@ -29,6 +31,7 @@ A modern task and note management application built with React, TypeScript, and 
 - Organized grid layout view
 
 ### User Features
+
 - Secure authentication
 - Personal workspace
 - Data privacy with row-level security
@@ -37,6 +40,7 @@ A modern task and note management application built with React, TypeScript, and 
 ## Tech Stack
 
 ### Frontend
+
 - React 18 with TypeScript
 - Vite for fast development
 - Tailwind CSS for styling
@@ -47,6 +51,7 @@ A modern task and note management application built with React, TypeScript, and 
 - Zustand for state management
 
 ### Backend
+
 - Supabase (PostgreSQL)
 - Row Level Security
 - Real-time capabilities
@@ -55,24 +60,29 @@ A modern task and note management application built with React, TypeScript, and 
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 16 or higher
 - npm or yarn
-- Supabase account
+- Docker and Docker Compose (for containerized deployment)
+- Supabase account (for cloud deployment) or Docker (for self-hosting)
 
 ### Local Development
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/SyahrulApr86/Trackify.git
 cd Trackify
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Set up environment variables:
+
 ```bash
 # Create .env file
 cp .env.example .env
@@ -83,13 +93,19 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 4. Start the development server:
+
 ```bash
 npm run dev
 ```
 
-### Docker Deployment
+### Deployment Options
+
+#### Option 1: Docker with Supabase Cloud
+
+Use this option if you have a Supabase cloud project and want to deploy only the frontend.
 
 1. Build and run with Docker Compose:
+
 ```bash
 # Build the containers
 docker compose build
@@ -103,24 +119,82 @@ docker compose logs -f
 
 2. Access the application at `http://localhost:8010`
 
+#### Option 2: Docker with Self-hosted Supabase
+
+Use this option if you want to run both the frontend and a complete Supabase backend locally.
+
+1. Set up environment variables:
+
+```bash
+# Create .env file if not exists
+cp .env.example .env
+
+# Make sure RUN_SUPABASE=true in your .env file
+# Fill in all Supabase-related variables
+```
+
+2. Build and run with Docker Compose including Supabase:
+
+```bash
+# Start both the app and Supabase services
+docker compose --profile supabase up -d
+
+# View logs
+docker compose logs -f
+```
+
+3. Access the application at `http://localhost:8010`
+4. Access Supabase Studio at `http://localhost:3000`
+
+## Self-hosted Supabase Structure
+
+When using the self-hosted Supabase option, the project is organized as follows:
+
+```
+├── app root (React application)
+├── supabase
+│   ├── migrations (Database migrations)
+│   └── docker     (Self-hosted Supabase configuration)
+│       ├── volumes
+│       │   ├── api
+│       │   ├── db
+│       │   ├── functions
+│       │   ├── logs
+│       │   └── pooler
+│       └── ... (other Supabase files)
+```
+
 ## Database Setup
+
+### Using Supabase Cloud
 
 1. Create a new Supabase project
 2. Run the migration files:
+
    ```bash
    # Navigate to migrations directory
    cd supabase/migrations
    
    # Apply migrations through Supabase dashboard or CLI
    ```
+
 3. Enable Row Level Security (RLS)
 4. Configure authentication settings
+
+### Using Self-hosted Supabase
+
+When using the self-hosted option with `docker compose --profile supabase`, the database will be initialized automatically. You can:
+
+1. Access Supabase Studio at `http://localhost:3000`
+2. Apply migrations manually if needed
+3. Configure authentication settings
 
 ## Usage Guide
 
 ### Task Management
 
 #### Creating Tasks
+
 1. Click "Add a task" in any column
 2. Fill in:
    - Title (required)
@@ -131,6 +205,7 @@ docker compose logs -f
 3. Click "Create Task"
 
 #### Managing Tasks
+
 - **Drag & Drop**: Move tasks between columns
 - **Edit**: Click on a task to view/edit details
 - **Bulk Actions**: Use table view for multiple tasks
@@ -138,11 +213,13 @@ docker compose logs -f
 - **Search**: Find tasks by title or description
 
 #### Categories
+
 - Create custom categories
 - Organize tasks by category
 - Manage category settings
 
 #### Archive
+
 - View archived tasks
 - Restore when needed
 - Automatic archiving after 7 days
@@ -150,6 +227,7 @@ docker compose logs -f
 ### Daily Notes
 
 #### Creating Notes
+
 1. Click "New Note"
 2. Choose:
    - Date
@@ -158,6 +236,7 @@ docker compose logs -f
 3. Save note
 
 #### Managing Notes
+
 - View all notes in grid layout
 - Click to view full details
 - Edit or delete as needed

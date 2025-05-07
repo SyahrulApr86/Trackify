@@ -13,7 +13,7 @@ import { KanbanBoardHeader } from './kanban/KanbanBoardHeader';
 import { KanbanBoardContent } from './kanban/KanbanBoardContent';
 import { KanbanBoardSidebar } from './kanban/KanbanBoardSidebar';
 import { KanbanBoardDialogs } from './kanban/KanbanBoardDialogs';
-import { updateTask, deleteTask, archiveTask, unarchiveTask, createTask, updateTaskPosition, bulkUpdateTasks } from '@/lib/taskOperations';
+import { updateTask, deleteTask, archiveTask, unarchiveTask, createTask, bulkUpdateTasks, bulkUpdateTaskOrders } from '@/lib/taskOperations';
 import { DropResult } from '@hello-pangea/dnd';
 import { Button } from './ui/button';
 
@@ -74,10 +74,11 @@ export function KanbanBoard() {
     const task = sourceColumn.tasks.find(t => t.id === draggableId);
     if (!task) return;
 
+    // Buat salinan board untuk update lokal (optimistik)
     const newBoard = {
       ...board,
       columns: board.columns.map(col => {
-        // Special case: reordering within the same column
+        // Kasus khusus: reordering dalam kolom yang sama
         if (source.droppableId === destination.droppableId && col.id === source.droppableId) {
           const columnTasks = [...col.tasks];
           const [movedTask] = columnTasks.splice(source.index, 1);
@@ -92,11 +93,12 @@ export function KanbanBoard() {
           };
         }
 
-        // Moving between different columns
+        // Pindah antar kolom yang berbeda
         if (col.id === source.droppableId) {
           return {
             ...col,
             tasks: col.tasks.filter(t => t.id !== draggableId)
+              .map((t, index) => ({ ...t, order: index }))
           };
         }
         if (col.id === destination.droppableId) {
@@ -108,6 +110,7 @@ export function KanbanBoard() {
           };
           const newTasks = [...col.tasks];
           newTasks.splice(destination.index, 0, updatedTask);
+          
           return {
             ...col,
             tasks: newTasks.map((t, index) => ({ ...t, order: index }))
@@ -117,26 +120,70 @@ export function KanbanBoard() {
       })
     };
 
+    // Perbarui UI dengan optimistic update
     setBoard(newBoard);
 
     try {
-      await updateTaskPosition(
-          user.id,
-          draggableId,
-          destination.droppableId,
-          destColumn.title,
-          destination.index
-      );
-
-      const destTasks = newBoard.columns.find(col => col.id === destination.droppableId)?.tasks || [];
-      for (const [index, t] of destTasks.entries()) {
-        if (t.id !== draggableId) {
-          await updateTaskPosition(user.id, t.id, destination.droppableId, t.status, index);
-        }
+      // Kumpulkan semua task yang perlu diperbarui
+      const tasksToUpdate = [];
+      
+      // 1. Pertama, tambahkan task yang di-drag
+      tasksToUpdate.push({
+        id: draggableId,
+        column_id: destination.droppableId,
+        status: destColumn.title,
+        order: destination.index
+      });
+      
+      // 2. Jika dalam kolom yang sama, perbarui semua task dalam kolom tersebut
+      if (source.droppableId === destination.droppableId) {
+        const columnTasks = newBoard.columns.find(col => col.id === destination.droppableId)?.tasks || [];
+        
+        // Tambahkan semua task lain yang ada di kolom selain task yang di-drag
+        columnTasks.forEach((t, index) => {
+          if (t.id !== draggableId) {
+            tasksToUpdate.push({
+              id: t.id,
+              column_id: destination.droppableId,
+              status: t.status,
+              order: index
+            });
+          }
+        });
+      } 
+      // 3. Jika pindah antar kolom, perbarui urutan di kedua kolom
+      else {
+        // Perbarui task di kolom sumber
+        const sourceTasks = newBoard.columns.find(col => col.id === source.droppableId)?.tasks || [];
+        sourceTasks.forEach((t, index) => {
+          tasksToUpdate.push({
+            id: t.id,
+            column_id: source.droppableId,
+            status: t.status,
+            order: index
+          });
+        });
+        
+        // Perbarui task lain di kolom tujuan
+        const destTasks = newBoard.columns.find(col => col.id === destination.droppableId)?.tasks || [];
+        destTasks.forEach((t, index) => {
+          if (t.id !== draggableId) {
+            tasksToUpdate.push({
+              id: t.id,
+              column_id: destination.droppableId,
+              status: t.status,
+              order: index
+            });
+          }
+        });
       }
+      
+      // Gunakan bulkUpdateTaskOrders untuk memperbarui semuanya dalam satu operasi
+      await bulkUpdateTaskOrders(user.id, tasksToUpdate);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       console.error('Error updating task position:', errorMessage);
+      // Reinisialisasi board jika terjadi kesalahan
       initializeBoard();
     }
   };
@@ -365,23 +412,25 @@ export function KanbanBoard() {
 
   const getFilteredBoard = () => {
     if (!board) return null;
-
+    
     return {
       ...board,
-      columns: board.columns.map(column => ({
-        ...column,
-        tasks: sortTasks(
+      columns: board.columns.map(column => {
+        // Filter dan sort tanpa mengubah property order asli
+        const filteredTasks = sortTasks(
           filterTasksByTag(
             filterTasksBySearch(column.tasks),
             kanbanTagFilter
           ).filter(task => 
             kanbanFilter === 'all' || task.category === kanbanFilter
           )
-        ).map((task, index) => ({
-          ...task,
-          order: index
-        }))
-      }))
+        );
+        
+        return {
+          ...column,
+          tasks: filteredTasks
+        };
+      })
     };
   };
 

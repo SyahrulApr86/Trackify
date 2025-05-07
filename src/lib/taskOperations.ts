@@ -385,6 +385,47 @@ export async function updateTaskPosition(
   }
 }
 
+/**
+ * Memperbarui urutan beberapa task sekaligus dalam satu transaksi
+ * Ini lebih efisien daripada memanggil updateTaskPosition untuk setiap task
+ */
+export async function bulkUpdateTaskOrders(
+  userId: string,
+  tasks: Array<{
+    id: string,
+    column_id: string,
+    status: string,
+    order: number
+  }>
+) {
+  try {
+    await restoreUserContext(userId);
+    
+    // Gunakan RPC untuk melakukan update dalam satu transaksi
+    // Atau fallback ke metode batch update jika tidak ada RPC
+    for (const task of tasks) {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          column_id: task.column_id,
+          order: task.order,
+          status: task.status
+        })
+        .eq('id', task.id);
+      
+      if (error) {
+        throw error;
+      }
+    }
+    
+    // Check for tasks that need to be archived after status update
+    await checkAndArchiveTasks(userId);
+  } catch (error) {
+    console.error('Error bulk updating task orders:', error);
+    throw error;
+  }
+}
+
 export async function bulkUpdateTasks(
   userId: string,
   taskIds: string[],

@@ -108,10 +108,10 @@ Use this option if you have a Supabase cloud project and want to deploy only the
 
 ```bash
 # Build the containers
-docker compose build
+docker compose --profile default build
 
 # Start the services
-docker compose up -d
+docker compose --profile default up
 
 # View logs
 docker compose logs -f
@@ -174,10 +174,9 @@ When using the self-hosted Supabase option, the project is organized as follows:
    ```bash
    # Navigate to migrations directory
    cd supabase/migrations
-   
+
    # Apply migrations through Supabase dashboard or CLI
    ```
-
 3. Enable Row Level Security (RLS)
 4. Configure authentication settings
 

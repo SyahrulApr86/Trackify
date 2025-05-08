@@ -446,8 +446,10 @@ services:
       LOGFLARE_URL: http://analytics:4000
       NEXT_PUBLIC_ENABLE_LOGS: true
       NEXT_ANALYTICS_BACKEND_PROVIDER: postgres
+      NEXT_TELEMETRY_DISABLED: 1
+      NEXT_PUBLIC_SITE_URL: http://localhost:${STUDIO_PORT}
     ports:
-      - ${STUDIO_PORT:-3000}:3000
+      - "${STUDIO_PORT}:3000"
     networks:
       - supabase-internal
       - app-network
@@ -495,10 +497,11 @@ services:
       - supabase-internal
 
 networks:
-  app-network:
-    driver: bridge
   supabase-internal:
+    name: supabase-internal
     driver: bridge
-
+  app-network:
+    name: app-network
+    driver: bridge
 volumes:
   db-config:
